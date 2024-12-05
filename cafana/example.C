@@ -30,7 +30,7 @@ void example()
      * and therefor the name of the output file, is specified as an argument to
      * the constructor.
      */
-    ana::Analysis analysis("nuexample");
+    ana::Analysis analysis("/exp/sbnd/data/users/brindenc/xsec_analysis/test/sbruce/example");
 
     /**
      * @brief Add a sample to the analysis.

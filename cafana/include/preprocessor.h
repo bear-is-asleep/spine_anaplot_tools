@@ -101,4 +101,40 @@
         }                                    \
         return var;                          \
     }
+
+/**
+ * @brief Preprocessor wrapper for looping over slices and broadcasting
+ * a function over the slices.
+ * @details This macro declares a lambda function that broadcasts a function
+ * over the slices and returns a vector of the results of the function.
+ * @param VAR function to broadcast over the interactions.
+ * @param SEL function to select interactions.
+ * @return a vector with the result of VAR called on each true interaction
+ * passing the cut SEL.
+ */
+
+#define PANDORAVAR(VAR,SEL)                  \
+    [](const caf::SRSpillProxy* sr)          \
+    {                                        \
+        std::vector<double> var;             \
+        for(auto const& i : sr->slc)         \
+        {                                    \
+            if(SEL(i))                       \
+                var.push_back(VAR(i));       \
+        }                                    \
+        return var;                          \
+    }
+
+#define PANDORAMULTIVAR(VAR,SEL)              \
+    [](const caf::SRSpillProxy* sr)          \
+    {                                        \
+        std::vector<double> var;       \
+        for(auto const& i : sr->slc)         \
+        {                                 \
+            auto res = VAR(i);                                  \
+            if(SEL(i))                      \
+                var.insert(var.end(), res.begin(), res.end());                       \
+        }                                    \
+        return var;                          \
+    }
 #endif // PREPROCESSOR_H

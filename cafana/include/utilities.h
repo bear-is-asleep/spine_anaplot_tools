@@ -63,7 +63,7 @@ namespace utilities
      * @return the index of the leading particle (highest KE). 
      */
     template <class T>
-        size_t leading_particle_index(const T & obj, uint16_t pid)
+        size_t sleading_particle_index(const T & obj, uint16_t pid)
         {
             double leading_ke(0);
             size_t index(0);
@@ -81,5 +81,6 @@ namespace utilities
             }
             return index;
         }
+        
 }
 #endif // UTILITIES_H
