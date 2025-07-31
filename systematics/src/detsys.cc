@@ -6,7 +6,7 @@
  * systematics using a spline interpolation of the ratio of the nominal and
  * sample histograms. Configuration of the class is done using a TOML-based
  * configuration file.
- * @see sys::cfg::ConfigurationTable 
+ * @see cfg::ConfigurationTable 
  * @author mueller@fnal.gov
  */
 #include <map>
@@ -24,7 +24,7 @@
 
 // Constructor for the DetsysCalculator class that initializes the class using
 // the configuration table, the output file, and the input file. 
-sys::detsys::DetsysCalculator::DetsysCalculator(sys::cfg::ConfigurationTable & table, TFile * output, TFile * input)
+sys::detsys::DetsysCalculator::DetsysCalculator(cfg::ConfigurationTable & table, TFile * output, TFile * input)
 {
     // Roll random z-scores to create a set of universes for later.
     std::random_device rd;
@@ -46,16 +46,42 @@ sys::detsys::DetsysCalculator::DetsysCalculator(sys::cfg::ConfigurationTable & t
     // the detector model.
     for(std::string variation : variations)
     {
-        std::string pot_name = table.get_string_field("variations.origin") + variation + '/' + "POT";
-        TH1D * h = (TH1D *) input->Get(pot_name.c_str());
-        double pot = h->GetBinContent(1) / 1e18;
+        double pot(0);
+        // Check if the variation has an exposure tree instead of a histogram.
+        std::string exp_tree_name = table.get_string_field("variations.origin") + variation + "/" + table.get_string_field("variations.tree") + "_exposure";
+        if(input->Get(exp_tree_name.c_str()))
+        {
+            // If the exposure tree exists, use it to calculate the POT.
+            // The tree has a branch "pot" that we need to sum over.
+            TTree * exp_tree = input->Get<TTree>(exp_tree_name.c_str());
+            double pot_value;
+            exp_tree->SetBranchAddress("pot", &pot_value);
+            for(int i(0); i < exp_tree->GetEntries(); ++i)
+            {
+                exp_tree->GetEntry(i);
+                pot += pot_value; // Sum the POT values
+            }
+            pot /= 1e18; // Convert to 1e18 POT
+        }
+        else
+        {
+            // If the exposure tree does not exist, use the POT histogram.
+            std::string pot_name = table.get_string_field("variations.origin") + variation + '/' + "POT";
+            TH1D * h = (TH1D *) input->Get(pot_name.c_str());
+            pot = h->GetBinContent(1) / 1e18; // Convert to 1e18 POT
+        }
+        std::cout << "Variation " << variation << " has " << pot << "e18 POT." << std::endl;
 
         std::string name = table.get_string_field("variations.origin") + variation + '/' + table.get_string_field("variations.tree");
         TTree * t = input->Get<TTree>(name.c_str());
         double value;
         t->SetBranchAddress(variable.c_str(), &value);
         std::vector<double> bins = table.get_double_vector("variations.bins");
-        histograms[variation] = new TH1D(variation.c_str(), variation.c_str(), bins[0], bins[1], bins[2]);
+        bool variable_length = table.get_bool_field("variations.variable_length_bins", false);
+        if(!variable_length)
+            histograms[variation] = new TH1D(variation.c_str(), variation.c_str(), bins[0], bins[1], bins[2]);
+        else
+            histograms[variation] = new TH1D(variation.c_str(), variation.c_str(), bins.size() - 1, bins.data());
         for(int i(0); i < t->GetEntries(); ++i)
         {
             t->GetEntry(i);
@@ -67,7 +93,7 @@ sys::detsys::DetsysCalculator::DetsysCalculator(sys::cfg::ConfigurationTable & t
     // entry in the "sys" block of the configuration file with type "variation"
     // specifies a single detector systematic parameter, but in general may
     // consist of multiple variations spanning the range of the parameter.
-    for(sys::cfg::ConfigurationTable & t : table.get_subtables("sys"))
+    for(cfg::ConfigurationTable & t : table.get_subtables("sys"))
     {
         // Skip non-variation detector systematics.
         if(t.get_string_field("type") != "variation")
