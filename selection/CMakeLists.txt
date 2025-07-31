@@ -93,6 +93,8 @@ add_executable(validate src/validate.cc)
 target_link_libraries(validate PRIVATE test common sbnanaobj_StandardRecord)
 target_include_directories(validate PRIVATE include/ ${SBNANA_INC} ${SBNANAOBJ_INC} ${SRPROXY_INC})
 
+add_executable(dumb src/dumb.cc)
+
 option(BUILD_DOCS "Build documentation" OFF)
 
 if(BUILD_DOCS)

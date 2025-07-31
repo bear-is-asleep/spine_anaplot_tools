@@ -1,5 +1,5 @@
 [general]
-output = "example"
+output = "numucc_incl"
 
 [[sample]]
 name = "simulation"
@@ -7,7 +7,7 @@ path = "/pnfs/sbnd/scratch/users/mueller/v10_06_00/bnb/sbnd_bnbrockbox_v10_06_00
 ismc = true
 
 [[tree]]
-name = "selected1mu1p"
+name = "selected1muX"
 sim_only = false
 mode = "reco"
 cut = [

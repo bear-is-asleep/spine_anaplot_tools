@@ -36,6 +36,7 @@ std::shared_ptr<VarFn<RParticleType>> pvars::pidfn = std::make_shared<VarFn<RPar
 template<typename T>
 void set_fcn(std::shared_ptr<VarFn<T>> & fcn, const std::string & name)
 {
+    std::cout << "Setting function for " << name << std::endl;
     std::string var_name;
     if constexpr(std::is_same_v<T, RParticleType>)
         var_name = "reco_particle_" + name;
@@ -46,6 +47,7 @@ void set_fcn(std::shared_ptr<VarFn<T>> & fcn, const std::string & name)
 
 int main(int argc, char * argv[])
 {
+    std::cout << "Starting SPINE analysis framework" << std::endl;
     // Check if the configuration file is provided as a command line argument
     if (argc < 2)
     {
@@ -57,6 +59,7 @@ int main(int argc, char * argv[])
     cfg::ConfigurationTable config;
     try
     {
+        std::cout << "Loading configuration file: " << argv[1] << std::endl;
         // Load the configuration file
         config.set_config(argv[1]);
 

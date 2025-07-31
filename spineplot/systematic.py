@@ -189,6 +189,8 @@ class Systematic:
         else:
             self._covariances = dict()
             for name, variable in self._variables.items():
+                if name not in sample._data.keys():
+                    raise ValueError(f'Variable "{name}" not found in sample "{sample._name}".')
                 data = sample._data[name].to_numpy()
                 bin_edges = list(variable._bin_edges.values())[0]
                 bin_indices = np.digitize(data, bin_edges) - 1

@@ -120,7 +120,7 @@ class Analysis:
                             # Check if the variable is present in all samples
                             if not all(self._variables[x['variable']]._validity_check.values()):
                                 missing_samples = [k for k, v in self._variables[x['variable']]._validity_check.items() if not v]
-                                raise ConfigException(f"Variable '{x['variable']}' not found in all samples ({' '.join(missing_samples)}).")
+                                print(f"Variable '{x['variable']}' not found in all samples ({' '.join(missing_samples)}). \n Available variables are {[k for k in self._variables.keys()]}.")
                             
                             # Create the artist
                             art = SpineSpectra1D(self._variables[x['variable']], restrict_categories,
