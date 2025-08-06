@@ -251,7 +251,7 @@ class Sample:
         # combine.
         for recipe in recipes:
             regxp = re.compile(recipe['pattern'])
-            systematics = [syst for k, syst in self._systematics.items() if regxp.match(k)]
+            systematics = [syst for k, syst in self._systematics.items() if regxp.search(k)]
 
             # If there are no systematics to combine, skip the recipe.
             if len(systematics) == 0:
