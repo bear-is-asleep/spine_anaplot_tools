@@ -1,5 +1,5 @@
 [general]
-output = "/exp/sbnd/data/users/brindenc/medulla/test/numucc_incl_sys3"
+output = "/exp/sbnd/data/users/brindenc/medulla/test/numucc_incl_sys_cont"
 
 [[sample]]
 name = "simulation"
@@ -17,78 +17,21 @@ path = "/pnfs/sbnd/scratch/users/mueller/firstMC2025B/data_MCP2025B_02_InTimeCos
 ismc = false
 
 [[tree]]
-name = "selected1muX"
-sim_only = false
-mode = "reco"
-cut = [
-    {name = "valid_flashmatch_cut", type = "reco"},
-    {name = "fiducial_cut", type = "reco", parameters = [-190.0,190.0,-190.0,190.0,10.0,450.0]},
-    {name = "has_muon", type = "reco", parameters = [25.0]},
-    {name = "leading_muon_start_dedx_cut", type = "reco", parameters = [3.5]},
-    {name = "flash_score_cut", type = "reco", parameters = [102.35]}
-
-]
-branch = [
-    # Interaction-level truth/reco branches
-    {name = "neutrino_id", type = "true"},
-    { name = "baseline",                type = "mctruth" },
-    { name = "cc",                      type = "mctruth" },
-    { name = "pdg",                     type = "mctruth" },
-    { name = "interaction_type",        type = "mctruth" },
-    { name = "category",                type = "true"    },
-    
-    # Leading muon variables
-    {name = "costheta", type = "both_particle", selector = "leading_muon"},
-    {name = "momentum", type = "both_particle", selector = "leading_muon"},
-    {name = "start_dedx", type = "reco_particle", selector = "leading_muon"},
-    {name = "start_x", type = "both_particle", selector = "leading_muon"},
-    {name = "start_y", type = "both_particle", selector = "leading_muon"},
-    {name = "start_z", type = "both_particle", selector = "leading_muon"},
-    { name = "end_x",             type = "both_particle", selector = "leading_muon"   },
-    { name = "end_y",             type = "both_particle", selector = "leading_muon"   },
-    { name = "end_z",             type = "both_particle", selector = "leading_muon"   },
-    {name = "ke", type = "both_particle", selector = "leading_muon"},
-    {name = "length", type = "both_particle", selector = "leading_muon"},
-    { name = "muon_softmax",      type = "reco_particle", selector = "leading_muon"   },
-    { name = "pion_softmax",      type = "reco_particle", selector = "leading_muon"   },
-    { name = "proton_softmax",    type = "reco_particle", selector = "leading_muon"   },
-    { name = "primary_softmax",   type = "reco_particle", selector = "leading_muon"   },
-    { name = "muon_softmax",      type = "reco_particle", selector = "leading_pion"   },
-    { name = "pion_softmax",      type = "reco_particle", selector = "leading_pion"   },
-    { name = "proton_softmax",    type = "reco_particle", selector = "leading_pion"   },
-    { name = "primary_softmax",   type = "reco_particle", selector = "leading_pion"   },
-    { name = "polar_angle",       type = "both_particle", selector = "leading_muon"   },
-    { name = "azimuthal_angle",   type = "both_particle", selector = "leading_muon"   },
-    { name = "secondary_softmax", type = "reco_particle", selector = "leading_muon"   },
-    { name = "mip_softmax",       type = "reco_particle", selector = "leading_muon"   },
-    { name = "hadron_softmax",    type = "reco_particle", selector = "leading_muon"   },
-
-    #Vertex variables
-    {name = "vertex_x", type = "both"},
-    {name = "vertex_y", type = "both"},
-    {name = "vertex_z", type = "both"},
-
-    #Flash variables
-    {name = "flash_score", type = "reco"},
-    {name = "flash_hypothesis", type = "reco"},
-    {name = "flash_time", type = "reco"},
-    {name = "flash_total_pe", type = "reco"}
-]
-
-[[tree]]
 name = "selected1muXNu"
 sim_only = false
 mode = "reco"
 cut = [
     {name = "neutrino", type = "true"},
-    {name = "valid_flashmatch_cut", type = "reco"},
     {name = "fiducial_cut", type = "reco", parameters = [-190.0,190.0,-190.0,190.0,10.0,450.0]},
     {name = "has_muon", type = "reco", parameters = [25.0]},
-    {name = "leading_muon_start_dedx_cut", type = "reco", parameters = [3.5]},
-    {name = "flash_score_cut", type = "reco", parameters = [102.35]}
-
+    {name = "containment_cut", type = "reco"}
 ]
 branch = [
+    #Store cuts as variables
+    {name = "valid_flashmatch", type = "reco"},
+    {name = "leading_muon_start_dedx_bool", type = "reco", parameters = [3.5]},
+    {name = "flash_score_bool", type = "reco", parameters = [102.35]},
+
     # Interaction-level truth/reco branches
     {name = "neutrino_id", type = "true"},
     { name = "baseline",                type = "mctruth" },
@@ -96,6 +39,8 @@ branch = [
     { name = "pdg",                     type = "mctruth" },
     { name = "interaction_type",        type = "mctruth" },
     { name = "category",                type = "true"    },
+    { name = "iou",                     type = "both"    },
+
     
     # Leading muon variables
     {name = "costheta", type = "both_particle", selector = "leading_muon"},
@@ -133,6 +78,8 @@ branch = [
     {name = "flash_hypothesis", type = "reco"},
     {name = "flash_time", type = "reco"},
     {name = "flash_total_pe", type = "reco"}
+
+
 ]
 
 [[tree]]
@@ -141,14 +88,16 @@ sim_only = false
 mode = "reco"
 cut = [
     {name = "!neutrino", type = "true"},
-    {name = "valid_flashmatch_cut", type = "reco"},
     {name = "fiducial_cut", type = "reco", parameters = [-190.0,190.0,-190.0,190.0,10.0,450.0]},
     {name = "has_muon", type = "reco", parameters = [25.0]},
-    {name = "leading_muon_start_dedx_cut", type = "reco", parameters = [3.5]},
-    {name = "flash_score_cut", type = "reco", parameters = [102.35]}
-
+    {name = "containment_cut", type = "reco"}
 ]
 branch = [
+    #Store cuts as variables
+    {name = "valid_flashmatch", type = "reco"},
+    {name = "leading_muon_start_dedx_bool", type = "reco", parameters = [3.5]},
+    {name = "flash_score_bool", type = "reco", parameters = [102.35]},
+
     # Interaction-level truth/reco branches
     {name = "neutrino_id", type = "true"},
     { name = "baseline",                type = "mctruth" },
@@ -156,6 +105,7 @@ branch = [
     { name = "pdg",                     type = "mctruth" },
     { name = "interaction_type",        type = "mctruth" },
     { name = "category",                type = "true"    },
+    { name = "iou",                     type = "both"    },
     
     # Leading muon variables
     {name = "costheta", type = "both_particle", selector = "leading_muon"},
@@ -210,6 +160,7 @@ branch = [
     {name = "has_muon_bool", type = "reco", parameters = [25.0]},
     {name = "leading_muon_start_dedx_bool", type = "reco", parameters = [3.5]},
     {name = "flash_score_bool", type = "reco", parameters = [102.35]},
+    {name = "containment", type = "reco"},
 
     # Interaction-level truth/reco branches
     {name = "neutrino_id", type = "true"},
@@ -218,6 +169,70 @@ branch = [
     { name = "pdg",                     type = "mctruth" },
     { name = "interaction_type",        type = "mctruth" },
     { name = "category",                type = "true"    },
+    { name = "iou",                     type = "both"    },
+    
+    # Leading muon variables
+    {name = "costheta", type = "both_particle", selector = "leading_muon"},
+    {name = "momentum", type = "both_particle", selector = "leading_muon"},
+    {name = "start_dedx", type = "reco_particle", selector = "leading_muon"},
+    {name = "start_x", type = "both_particle", selector = "leading_muon"},
+    {name = "start_y", type = "both_particle", selector = "leading_muon"},
+    {name = "start_z", type = "both_particle", selector = "leading_muon"},
+    { name = "end_x",             type = "both_particle", selector = "leading_muon"   },
+    { name = "end_y",             type = "both_particle", selector = "leading_muon"   },
+    { name = "end_z",             type = "both_particle", selector = "leading_muon"   },
+    {name = "ke", type = "both_particle", selector = "leading_muon"},
+    {name = "length", type = "both_particle", selector = "leading_muon"},
+    { name = "muon_softmax",      type = "reco_particle", selector = "leading_muon"   },
+    { name = "pion_softmax",      type = "reco_particle", selector = "leading_muon"   },
+    { name = "proton_softmax",    type = "reco_particle", selector = "leading_muon"   },
+    { name = "muon_softmax",      type = "reco_particle", selector = "leading_pion"   },
+    { name = "pion_softmax",      type = "reco_particle", selector = "leading_pion"   },
+    { name = "proton_softmax",    type = "reco_particle", selector = "leading_pion"   },
+    { name = "primary_softmax",   type = "reco_particle", selector = "leading_pion"   },
+    { name = "polar_angle",       type = "both_particle", selector = "leading_muon"   },
+    { name = "azimuthal_angle",   type = "both_particle", selector = "leading_muon"   },
+    { name = "primary_softmax",   type = "reco_particle", selector = "leading_muon"   },
+    { name = "secondary_softmax", type = "reco_particle", selector = "leading_muon"   },
+    { name = "mip_softmax",       type = "reco_particle", selector = "leading_muon"   },
+    { name = "hadron_softmax",    type = "reco_particle", selector = "leading_muon"   },
+
+    #Vertex variables
+    {name = "vertex_x", type = "both"},
+    {name = "vertex_y", type = "both"},
+    {name = "vertex_z", type = "both"},
+
+    #Flash variables
+    {name = "flash_score", type = "reco"},
+    {name = "flash_hypothesis", type = "reco"},
+    {name = "flash_time", type = "reco"},
+    {name = "flash_total_pe", type = "reco"}
+]
+
+[[tree]]
+name = "selected1muX_none"
+sim_only = false
+mode = "reco"
+cut = [
+
+]
+branch = [
+    #Store cuts as variables
+    {name = "valid_flashmatch", type = "reco"},
+    {name = "fiducial_bool", type = "reco", parameters = [-190.0,190.0,-190.0,190.0,10.0,450.0]},
+    {name = "has_muon_bool", type = "reco", parameters = [25.0]},
+    {name = "leading_muon_start_dedx_bool", type = "reco", parameters = [3.5]},
+    {name = "flash_score_bool", type = "reco", parameters = [102.35]},
+    {name = "containment", type = "reco"},
+
+    # Interaction-level truth/reco branches
+    {name = "neutrino_id", type = "true"},
+    { name = "baseline",                type = "mctruth" },
+    { name = "cc",                      type = "mctruth" },
+    { name = "pdg",                     type = "mctruth" },
+    { name = "interaction_type",        type = "mctruth" },
+    { name = "category",                type = "true"    },
+    { name = "iou",                     type = "both"    },
     
     # Leading muon variables
     {name = "costheta", type = "both_particle", selector = "leading_muon"},
@@ -272,6 +287,7 @@ branch = [
     {name = "has_muon_bool", type = "reco", parameters = [25.0]},
     {name = "leading_muon_start_dedx_bool", type = "reco", parameters = [3.5]},
     {name = "flash_score_bool", type = "reco", parameters = [102.35]},
+    {name = "containment", type = "reco"},
     
     # Interaction-level truth/reco branches
     {name = "neutrino_id", type = "true"},
@@ -280,6 +296,7 @@ branch = [
     { name = "pdg",                     type = "mctruth" },
     { name = "interaction_type",        type = "mctruth" },
     { name = "category",                type = "true"    },
+    { name = "iou",                     type = "both"    },
     
     # Leading muon variables
     {name = "costheta", type = "both_particle", selector = "leading_muon"},
@@ -326,7 +343,8 @@ mode = "true"
 cut = [
     {name = "neutrino", type = "true"},
     {name = "fiducial_cut", type = "true", parameters = [-190.0,190.0,-190.0,190.0,10.0,450.0]},
-    {name = "has_muon", type = "true", parameters = [25.0]}
+    {name = "has_muon", type = "true", parameters = [25.0]},
+    {name = "containment_cut", type = "true"}
 ]
 branch = [
     #Store cuts as variables
@@ -335,6 +353,7 @@ branch = [
     {name = "has_muon_bool", type = "reco", parameters = [25.0]},
     {name = "leading_muon_start_dedx_bool", type = "reco", parameters = [3.5]},
     {name = "flash_score_bool", type = "reco", parameters = [102.35]},
+    {name = "containment", type = "reco"},
 
     # Interaction-level truth/reco branches
     {name = "neutrino_id", type = "true"},
@@ -343,9 +362,9 @@ branch = [
     { name = "pdg",                     type = "mctruth" },
     { name = "interaction_type",        type = "mctruth" },
     { name = "category",                type = "true"    },
+    { name = "iou",                     type = "both"    },
 
     # Leading muon variables
-    # Use true selector for leading muon variables
     {name = "costheta", type = "both_particle", selector = "leading_muon"},
     {name = "momentum", type = "both_particle", selector = "leading_muon"},
     {name = "start_dedx", type = "reco_particle", selector = "leading_muon"},
@@ -366,8 +385,6 @@ branch = [
     { name = "secondary_softmax", type = "reco_particle", selector = "leading_muon"   },
     { name = "mip_softmax",       type = "reco_particle", selector = "leading_muon"   },
     { name = "hadron_softmax",    type = "reco_particle", selector = "leading_muon"   },
-    { name = "id", type = "both_particle", selector = "leading_muon"},
-    { name = "interaction_id", type = "both_particle", selector = "leading_muon"},
 
     #Vertex variables
     {name = "vertex_x", type = "both"},
@@ -379,22 +396,4 @@ branch = [
     {name = "flash_hypothesis", type = "reco"},
     {name = "flash_time", type = "reco"},
     {name = "flash_total_pe", type = "reco"}
-]
-
-[[tree]]
-name = "signal1muX_particle"
-sim_only = true
-mode = "true"
-cut = [
-    {name = "is_pid", type="true_particle", parameters = [2.0]},
-    {name = "neutrino", type = "true"},
-    {name = "fiducial_cut", type = "true", parameters = [-190.0,190.0,-190.0,190.0,10.0,450.0]},
-    {name = "has_muon", type = "true", parameters = [25.0]}
-]
-branch = [
-    {name = "id", type = "both_particle"},
-    {name = "csda_ke_pid", type = "both_particle", parameters = [2.0]},
-    {name = "interaction_id", type = "both_particle"},
-    {name = "momentum_pid", type = "both_particle", parameters = [2.0]},
-    {name = "costheta", type = "both_particle"},
 ]

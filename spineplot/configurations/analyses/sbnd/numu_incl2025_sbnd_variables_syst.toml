@@ -1,0 +1,25 @@
+[variables]
+
+[variables.reco_leading_muon_momentum_gev]
+key = "reco_leading_muon_momentum_gev"
+range = [0.0, 2.5]
+nbins = 26
+xlabel = "Reconstructed $\\mu$ Momentum [GeV/c]"
+
+[variables.true_leading_muon_momentum_gev]
+key = "true_leading_muon_momentum_gev"
+range = [0.0, 2.5]
+nbins = 26
+xlabel = "True $\\mu$ Momentum [GeV/c]"
+
+[variables.true_leading_muon_costheta]
+key = "true_leading_muon_costheta"
+range = [-1, 1]
+nbins = 21
+xlabel = "True $\\cos\\theta_\\mu$"
+
+[variables.reco_leading_muon_costheta]
+key = "reco_leading_muon_costheta"
+range = [-1, 1]
+nbins = 21
+xlabel = "Reconstructed $\\cos\\theta_\\mu$"

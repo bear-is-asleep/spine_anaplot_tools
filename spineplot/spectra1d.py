@@ -144,15 +144,24 @@ class SpineSpectra1D(SpineSpectra):
                 self._plotdata[self._categories[category]] = np.zeros(self._variable._nbins)
                 self._onebincount[self._categories[category]] = 0
             xr = self._variable._range if self._xrange is None else self._xrange
-            h = np.histogram(values, bins=self._variable._nbins, range=xr, weights=weights[category])
+            if self._variable._xscale == 'log':
+                self._bins = np.logspace(np.log10(xr[0]), np.log10(xr[1]), self._variable._nbins+1)
+            else:
+                self._bins = np.linspace(xr[0], xr[1], self._variable._nbins+1)
+            h = np.histogram(values, bins=self._bins, weights=weights[category])
             self._onebincount[self._categories[category]] += np.sum(weights[category])
             self._plotdata[self._categories[category]] += h[0]
             self._binedges[self._categories[category]] = h[1]
+        
+        # If the sample has a save_dir, save the data to a csv file
+        if sample._save_dir is not None:
+            df = pd.DataFrame(self._plotdata[list(self._plotdata.keys())[0]], index=self._binedges[list(self._plotdata.keys())[0]][:-1] + np.diff(self._binedges[list(self._plotdata.keys())[0]]) / 2)
+            df.to_csv(f'{sample._save_dir}/{self._variable._key[5:]}_spectra1d.csv')
 
     def draw(self, ax, style, show_component_number=False,
              show_component_percentage=False, invert_stack_order=False,
              fit_type=None, logx=False, logy=False, normalize=False,
-             draw_error=None) -> None:
+             draw_error=None, save_csv_name=None, fontsize=8,**legend_kwargs) -> None:
         """
         Plots the data for the SpineSpectra1D object.
 
@@ -190,14 +199,20 @@ class SpineSpectra1D(SpineSpectra):
         draw_error : str, optional
             Indicates the name of the Systematic object to use for
             drawing the error boxes. The default is None.
-
+        save_csv_name : str, optional
+            The name of the CSV file to save the data to. The default is None,
+            which will not save the data.
+        legend_kwargs : dict, optional
+            Additional keyword arguments to pass to the legend. The
+            default is None.
         Returns
         -------
         None.
         """
         ax.set_xlabel(self._variable._xlabel if self._xtitle is None else self._xtitle)
-        ax.set_ylabel('Candidates')
+        ax.set_ylabel('Candidates' if not normalize else 'Normalized Candidates')
         ax.set_xlim(*self._variable._range if self._xrange is None else self._xrange)
+        ax.set_xscale(self._variable._xscale)
         ax.set_title(self._title)
 
         if self._plotdata is not None:
@@ -217,11 +232,11 @@ class SpineSpectra1D(SpineSpectra):
                 super().fit_with_function(ax, bincenters[0], np.sum(data, axis=0), self._binedges[labels[0]], fit_type, range=xr)
 
             if show_component_number and show_component_percentage:
-                hlabel = lambda x : f'{np.sum(x):.1f}, {np.sum(x)/denominator:.2%}'
-                slabel = lambda x : f'{np.sum(x):.1f}'
+                hlabel = lambda x : f'{np.sum(x):,.0f}, {np.sum(x)/denominator:.2%}'
+                slabel = lambda x : f'{np.sum(x):,.0f}'
                 labels = [f'{label} ({hlabel(d) if li in histogram_mask else slabel(d)})' for li, (label, d) in enumerate(zip(labels, counts))]
             elif show_component_number:
-                labels = [f'{label} ({np.sum(d):.1f})' for label, d in zip(labels, counts)]
+                labels = [f'{label} ({np.sum(d):,})' for label, d in zip(labels, counts)]
             elif show_component_percentage:
                 labels = [f'{label} ({np.sum(d)/denominator:.2%})' if li in histogram_mask else label for li, (label, d) in enumerate(zip(labels, counts))]
 
@@ -231,7 +246,11 @@ class SpineSpectra1D(SpineSpectra):
                 reduce = lambda x : [x[i] for i in histogram_mask]
             
             scale = 1.0 if not normalize else 1.0 / np.sum(reduce(data))
-            ax.hist(reduce(bincenters), weights=[scale*x for x in reduce(data)], bins=self._variable._nbins, range=xr, label=reduce(labels), color=reduce(colors), **style.plot_kwargs)
+            bin_vals, _, _ = ax.hist(reduce(bincenters), weights=[scale*x for x in reduce(data)], bins=self._bins, label=reduce(labels), color=reduce(colors), **style.plot_kwargs)
+            if save_csv_name is not None:
+                #Use the last bin, which contains the entire stack
+                df = pd.DataFrame(bin_vals[-1], index=bincenters[0])
+                df.to_csv(save_csv_name)
             if draw_error:
                 systs = [s[draw_error] for s in self._systematics.values() if draw_error in s]
                 cov = np.sum(s.get_covariance(self._variable._key) for s in systs)
@@ -252,15 +271,15 @@ class SpineSpectra1D(SpineSpectra):
             if draw_error:
                 h.append(plt.Rectangle((0, 0), 1, 1, fc='gray', alpha=0.5, hatch='///'))
                 l.append(systs[0].label)
-                ax.legend(h[-2::-1]+h[-1:], l[-2::-1]+l[-1:])
+                ax.legend(h[-2::-1]+h[-1:], l[-2::-1]+l[-1:], **legend_kwargs)
             else:
-                ax.legend(h[::-1], l[::-1])
+                ax.legend(h[::-1], l[::-1], **legend_kwargs)
         else:
             h, l = ax.get_legend_handles_labels()
             if draw_error:
                 h.append(plt.Rectangle((0, 0), 1, 1, fc='gray', alpha=0.5, hatch='///'))
                 l.append(systs[0].label)
-            ax.legend(h, l)
+            ax.legend(h, l, **legend_kwargs)
 
         if isinstance(self._yrange, (tuple, list)):
             ax.set_ylim(*self._yrange)
@@ -309,4 +328,4 @@ class SpineSpectra1D(SpineSpectra):
         if style.mark_pot:
             mark_pot(ax, self._exposure, style.mark_pot_horizontal, vadj=vadj)
         if style.mark_preliminary is not None:
-            mark_preliminary(ax, style.mark_preliminary, hadj=hadj, vadj=vadj)
+            mark_preliminary(ax, style.mark_preliminary)

@@ -16,6 +16,8 @@
 
 #include "utilities.h"
 #include "framework.h"
+#include "particle_cuts.h"
+#include "selectors.h"
 
 /**
  * @namespace cuts
@@ -28,6 +30,19 @@
  */
 namespace cuts
 {   
+    /**
+     * Cut on match overlap to be between 0 and 1. False if no match overlap.
+     */
+    template<class T>
+    bool valid_match_overlap(const T & obj)
+    {
+        if(obj.match_overlaps.size() > 0)
+            return obj.match_overlaps[0] >= 0 && obj.match_overlaps[0] <= 1;
+        else
+            return false;
+    }
+    REGISTER_CUT_SCOPE(RegistrationScope::Both, valid_match_overlap, valid_match_overlap);
+    
     /**
      * @brief Apply a cut on the validity of the flash match.
      * @details A "valid" flash match is defined as a flash-interaction
@@ -43,11 +58,11 @@ namespace cuts
      * @return true if the interaction is flash matched and the time is valid.
      */
     template<class T>
-    bool valid_flashmatch(const T & obj)
+    bool valid_flashmatch_cut(const T & obj)
     {
         return obj.flash_times.size() > 0 && obj.is_flash_matched == 1 && !std::isnan(obj.flash_times[0]);
     }
-    REGISTER_CUT_SCOPE(RegistrationScope::Both, valid_flashmatch, valid_flashmatch);
+    REGISTER_CUT_SCOPE(RegistrationScope::Both, valid_flashmatch_cut, valid_flashmatch_cut);
 
     /**
      * @brief Apply no cut; all interactions passed.
@@ -120,9 +135,19 @@ namespace cuts
      * @return true if the vertex is in the fiducial volume.
      */
     template<class T>
-    bool fiducial_cut(const T & obj)
+    bool fiducial_cut(const T & obj, std::vector<double> params={})
     {
-        return obj.is_fiducial && !(obj.vertex[0] > 210.215 && obj.vertex[1] > 60 && (obj.vertex[2] > 290 && obj.vertex[2] < 390));
+        if (params.size() == 6) //[[xmin,xmax,ymin,ymax,zmin,zmax]]
+        {
+            return (obj.vertex[0] > params[0] && obj.vertex[0] < params[1] && //x
+                obj.vertex[1] > params[2] && obj.vertex[1] < params[3] && //y
+                obj.vertex[2] > params[4] && obj.vertex[2] < params[5]); //z
+        }
+        else
+        {
+            return obj.is_fiducial;
+        }
+        //return obj.is_fiducial && !(obj.vertex[0] > 210.215 && obj.vertex[1] > 60 && (obj.vertex[2] > 290 && obj.vertex[2] < 390));
     }
     REGISTER_CUT_SCOPE(RegistrationScope::Both, fiducial_cut, fiducial_cut);
     
@@ -161,7 +186,7 @@ namespace cuts
     template<class T>
     bool flash_cut(const T & obj, std::vector<double> params={})
     {
-        if(!valid_flashmatch(obj))
+        if(!valid_flashmatch_cut(obj))
             return false;
         else if(params.size() == 2 && obj.flash_times[0] >= params[0] && obj.flash_times[0] <= params[1])
             return true;
@@ -341,6 +366,40 @@ namespace cuts
     REGISTER_CUT_SCOPE(RegistrationScope::Both, no_photons, no_photons);
 
     /**
+    * @brief Binding for any number of muons cut
+    * @details This function binds the single particle multiplicity cut for
+    * muons, which corresponds to the index 2 in the
+    * @ref utilities::count_primaries function.
+    * @param obj the interaction to select on.
+    * @param params the parameters for the cut. In this case, this sets the
+    * kinetic energy threshold for a muon to count towards the multiplicity.
+    * Defaults to 25 MeV.
+    */
+   template<class T>
+   bool has_muon(const T & obj, std::vector<double> params={25.0,})
+   {
+       return nonzero_particle_multiplicity(obj, 2, params);
+   }
+   REGISTER_CUT_SCOPE(RegistrationScope::Both, has_muon, has_muon);
+
+   /**
+    * @brief Binding for any number of electrons cut
+    * @details This function binds the single particle multiplicity cut for
+    * electrons, which corresponds to the index 1 in the
+    * @ref utilities::count_primaries function.
+    * @param obj the interaction to select on.
+    * @param params the parameters for the cut. In this case, this sets the
+    * kinetic energy threshold for an electron to count towards the multiplicity.
+    * Defaults to 25 MeV.
+    */
+    template<class T>
+    bool has_electron(const T & obj, std::vector<double> params={25.0,})
+    {
+        return nonzero_particle_multiplicity(obj, 1, params);
+    }
+    REGISTER_CUT_SCOPE(RegistrationScope::Both, has_electron, has_electron);
+
+    /**
      * @brief Binding for zero particle electron multiplicity cut (negation of
      * nonzero_particle_multiplicity).
      * @details This function binds the nonzero particle multiplicity cut for
@@ -421,5 +480,50 @@ namespace cuts
         return !nonzero_particle_multiplicity(obj, 4, params);
     }
     REGISTER_CUT_SCOPE(RegistrationScope::Both, no_protons, no_protons);
+
+    /**
+     * @brief Best muon, start dedx cut.
+     * @details This function applies a cut to select interactions with a
+     * best muon that has a start dedx greater than the threshold.
+     * @param obj the interaction to select on.
+     * @param params the parameters for the cut. In this case, this sets the
+     * start dedx threshold. Defaults to 3.5.
+     * @return true if the interaction has a best muon with a start dedx
+     * greater than the threshold.
+     */
+    template<class T>
+    bool leading_muon_start_dedx_cut(const T & obj, std::vector<double> params={3.5,})
+    {
+        size_t leading_muon_index = selectors::leading_muon(obj);
+        if (leading_muon_index == kNoMatch) return false;
+        if (obj.particles[leading_muon_index].is_contained) return true; //If the leading muon is contained, we don't apply the cut
+        if (leading_muon_index >= 0)
+        {
+            return obj.particles[leading_muon_index].start_dedx < params[0];
+        }
+        else
+        {
+            return false; //If no leading muon, cut
+        }
+    }
+    REGISTER_CUT_SCOPE(RegistrationScope::Reco, leading_muon_start_dedx_cut, leading_muon_start_dedx_cut);
+
+    /**
+     * @brief Flash score cut.
+     * @details This function applies a cut to select interactions with a
+     * flash score greater than the threshold.
+     * @param obj the interaction to select on.
+     * @param params the parameters for the cut. In this case, this sets the
+     * flash score threshold. Defaults to 102.35.
+     * @return true if the interaction has a flash score greater than the threshold.
+     */
+    template<class T>
+    bool flash_score_cut(const T & obj, std::vector<double> params={102.35,})
+    {
+        if (obj.flash_scores.size() == 0)
+            return false;
+        return obj.flash_scores[0] > params[0]; //Assumes only one flash score per interaction (check this with later versions)
+    }
+    REGISTER_CUT_SCOPE(RegistrationScope::Both, flash_score_cut, flash_score_cut);
 }
 #endif

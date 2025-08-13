@@ -35,7 +35,7 @@ class Variable:
         variable in the analysis.
     """
     def __init__(self, name, key, range, nbins,
-                 binning_scheme='equal_width', xlabel=None,
+                 binning_scheme='equal_width', xlabel=None, xscale='linear',
                  mask=None) -> None:
         """
         Initializes the Variable object with the given kwargs.
@@ -58,6 +58,9 @@ class Variable:
             irrespective of the number of entries in each bin.
         xlabel : str
             The x-axis label for the variable.
+        xscale : str
+            The scale for the x-axis. This can be either 'linear' or
+            'log'. The default is 'linear'.
         mask : string, optional
             A mask formula to apply to the variable. The default is None.
 
@@ -71,6 +74,7 @@ class Variable:
         self._nbins = nbins
         self._binning_scheme = binning_scheme
         self._xlabel = xlabel
+        self._xscale = xscale
         self._mask = mask
         self._validity_check = {}
         self._bin_edges = {}
@@ -123,7 +127,10 @@ class Variable:
                     self._bin_centers[g] = 0.5*(self._bin_edges[g][1:] + self._bin_edges[g][:-1])
                     self._bin_widths[g] = self._bin_edges[g][1:] - self._bin_edges[g][:-1]
                 else:
-                    self._bin_edges[g] = np.linspace(self._range[0], self._range[1], self._nbins+1)
+                    if self._xscale == 'log':
+                        self._bin_edges[g] = np.logspace(np.log10(self._range[0]), np.log10(self._range[1]), self._nbins+1)
+                    else:
+                        self._bin_edges[g] = np.linspace(self._range[0], self._range[1], self._nbins+1)
                     self._bin_centers[g] = 0.5*(self._bin_edges[g][1:] + self._bin_edges[g][:-1])
                     self._bin_widths[g] = self._bin_edges[g][1:] - self._bin_edges[g][:-1]
 

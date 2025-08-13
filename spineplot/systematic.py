@@ -58,11 +58,23 @@ class Systematic:
         A dictionary containing the covariance matrices for each of the
         variables. The keys are the names of the variables and the values
         are numpy.ndarray objects representing the covariance matrices.
+    _frac_uncs : dict
+        A dictionary containing the fractional uncertainties for each of the
+        variables. The keys are the names of the variables and the values
+        are numpy.ndarray objects representing the fractional uncertainties.
     _std : float
         The one-bin fractional uncertainty for the systematic parameter.
         This intuitively can be thought of as the uncertainty on a simple
         count of selected candidates due to the influence of the
         systematic parameter.
+    _cv_histograms : dict
+        A dictionary containing the central value histograms for each of the variables.
+        The keys are the names of the variables and the values are numpy.ndarray
+        objects representing the histograms.
+    _bin_edges : dict
+        A dictionary containing the bin edges for each of the variables.
+        The keys are the names of the variables and the values are numpy.ndarray
+        objects representing the bin edges.
 
     Methods
     -------
@@ -79,7 +91,7 @@ class Systematic:
         Combine a list of Systematic objects into a single Systematic
         object.
     """
-    def __init__(self, name, handle, label=None):
+    def __init__(self, name, handle, label=None, save_dir=None):
         """
         Initializes the Systematic object with the given name and Variable.
 
@@ -95,7 +107,11 @@ class Systematic:
         self._label = label
         self._handle = handle
         self._variables = dict()
-
+        self._save_dir = save_dir
+        self._std_by_variable = dict()
+        self._frac_uncs = dict()
+        self._cv_histograms = dict()
+        self._bin_edges = dict()
     def register_variable(self, variable):
         """
         Register a Variable object with the Systematic object.
@@ -172,16 +188,35 @@ class Systematic:
                 # Central value
                 cv_histogram = np.zeros(len(bin_edges) - 1)
                 np.add.at(cv_histogram, bin_indices, 1)
+                self._cv_histograms[f'{self._name}_{name}'] = cv_histogram
+                self._bin_edges[f'{self._name}_{name}'] = bin_edges
 
                 # Covariance matrix calculated with respect to the central
                 # value.
                 diff = histogram - cv_histogram[:, np.newaxis]
-                self._covariances[f'{self._name}_{name}'] = (diff @ diff.T) / (self._universe_weights.shape[1])
+                self._covariances[f'{self._name}_{name}'] = (diff @ diff.T) / (self._universe_weights.shape[1] - 1)
 
                 # One-bin uncertainty
                 diff = np.sum(diff, axis=0)
                 self._std = np.sqrt((diff @ diff.T) / (self._universe_weights.shape[1]))
                 self._std /= self._universe_weights.shape[0]
+                self._std_by_variable[name] = self._std
+
+                # Save the fractional uncertainties
+                uncs = np.sqrt(np.diag(self._covariances[f'{self._name}_{name}']))
+                frac_uncs = uncs / cv_histogram
+                self._frac_uncs[f'{self._name}_{name}'] = frac_uncs
+
+                # Save the one-bin uncertainty, the covariance matrix and the fractional uncertainty
+                # to a file
+                if self._save_dir is not None:
+                    if 'momentum_gev' not in name and 'costheta' not in name:
+                        continue
+                    #print(f'{self._name}_{name} std: {self._std}')
+                    self.save(self._save_dir, f'{self._name}_{name}')
+                    # np.savetxt(f'{self._save_dir}/{self._name}_{name}_cov.csv', self._covariances[f'{self._name}_{name}'], delimiter=',')
+                    # np.savetxt(f'{self._save_dir}/{self._name}_{name}_uncs.csv', uncs, delimiter=',')
+                    # np.savetxt(f'{self._save_dir}/{self._name}_{name}_fracuncs.csv', frac_uncs, delimiter=',')
 
             self._universe_weights = None
         # The handle is None, which is taken to be the case where we
@@ -199,11 +234,31 @@ class Systematic:
                 
                 histogram = np.zeros(len(bin_edges) - 1)
                 np.add.at(histogram, bin_indices, 1)
+                self._cv_histograms[f'{self._name}_{name}'] = histogram
+                self._bin_edges[f'{self._name}_{name}'] = bin_edges
 
                 self._covariances[f'{self._name}_{name}'] = np.diag(histogram)
                 self._std = np.sqrt(histogram.sum())
                 self._std /= histogram.sum()
+                self._std_by_variable[name] = self._std
 
+                # Save the fractional uncertainties
+                uncs = np.sqrt(np.diag(self._covariances[f'{self._name}_{name}']))
+                frac_uncs = uncs / histogram
+                self._frac_uncs[f'{self._name}_{name}'] = frac_uncs
+
+                # Save the one-bin uncertainty, the covariance matrix and the fractional uncertainty
+                # to a file
+                if self._save_dir is not None:
+                    if 'momentum_gev' not in name and 'costheta' not in name:
+                        continue
+                    # np.savetxt(f'{self._save_dir}/{self._name}_{name}_cov.csv', self._covariances[f'{self._name}_{name}'], delimiter=',')
+                    # np.savetxt(f'{self._save_dir}/{self._name}_{name}_uncs.csv', uncs, delimiter=',')
+                    # np.savetxt(f'{self._save_dir}/{self._name}_{name}_fracuncs.csv', frac_uncs, delimiter=',')
+                    self.save(self._save_dir, f'{self._name}_{name}')
+                    #Also save the central value histogram to a file
+                    #print(f'Saving {name}_cv.csv to {self._save_dir}')
+                    #np.savetxt(f'{self._save_dir}/{name}_cv.csv', histogram, delimiter=',')
     def get_covariance(self, variable) -> np.ndarray:
         """
         Retrieve the covariance matrix for the given variable.
@@ -219,7 +274,10 @@ class Systematic:
         numpy.ndarray
             The covariance matrix for the given variable.
         """
-        return self._covariances[f'{self._name}_{variable}']
+        cov = self._covariances[f'{self._name}_{variable}']
+        if not hasattr(cov, 'shape'):
+            raise ValueError(f'Covariance matrix for {variable} is not a numpy array. cov = {type(cov)}')
+        return cov
 
     def set_weight(self, weight):
         """
@@ -242,10 +300,11 @@ class Systematic:
         None.
         """
         for kvar, vvar in self._variables.items():
-            self._covariances[f'{self._name}_{kvar}'] *= weight**2
+            self._covariances[f'{self._name}_{kvar}'] *= weight**2        
+
 
     @staticmethod
-    def combine(systematics, name, label) -> 'Systematic':
+    def combine(systematics, name, label, save_dir=None) -> 'Systematic':
         """
         Combine a list of Systematic objects into a single Systematic
         object. This is done by adding the covariance matrices of the
@@ -261,15 +320,22 @@ class Systematic:
             The name of the new Systematic object.
         label : str
             The label of the new Systematic object.
+        save_dir : str, optional
+            The directory to save the systematic uncertainties to. The
+            default is None.
 
         Returns
         -------
         Systematic
             A new Systematic object with the covariance matrices added.
         """
-        new_systematic = Systematic(name, None, label)
+        new_systematic = Systematic(name, None, label, save_dir)
         new_systematic._variables = systematics[0]._variables
         new_systematic._covariances = dict()
+        new_systematic._std_by_variable = dict()
+        new_systematic._frac_uncs = dict()
+        new_systematic._cv_histograms = dict()
+        new_systematic._bin_edges = dict()
         for kvar, vvar in new_systematic._variables.items():
             if any([kvar not in sys._variables.keys() for sys in systematics]):
                 msg = f'Variable {kvar} not found in all Systematic objects.'
@@ -278,7 +344,14 @@ class Systematic:
                 [sys._covariances[f'{sys._name}_{kvar}'] for sys in systematics],
                 axis=0
             )
-            new_systematic._std = np.sqrt(np.sum([sys._std**2 for sys in systematics]))
+            new_systematic._std_by_variable[kvar] = np.sqrt(
+                np.sum([sys._std_by_variable[kvar]**2 for sys in systematics])
+            )
+            #CV is always the same for all systematics
+            new_systematic._cv_histograms[f'{name}_{kvar}'] = systematics[0]._cv_histograms[f'{systematics[0]._name}_{kvar}']
+            new_systematic._bin_edges[f'{name}_{kvar}'] = systematics[0]._bin_edges[f'{systematics[0]._name}_{kvar}']
+            new_systematic._frac_uncs[f'{name}_{kvar}'] = np.sqrt(np.diag(new_systematic._covariances[f'{name}_{kvar}'])) / new_systematic._cv_histograms[f'{name}_{kvar}']
+        new_systematic._std = np.sqrt(np.sum([sys._std**2 for sys in systematics]))
         
         return new_systematic
 
@@ -310,6 +383,8 @@ class Systematic:
         numpy.ndarray
             The transformed covariance matrix.
         """
+        assert hasattr(cov, 'shape'), f'Covariance matrix must be a numpy array. cov = {type(cov)}'
+        assert cov.shape[0] == cov.shape[1], f'Covariance matrix must be square. cov = {cov.shape}'
         if np.isscalar(param):
             return cov * param**2
 
@@ -319,6 +394,40 @@ class Systematic:
             delta = np.eye(len(y))
             jacobian = (delta * A - y) / A**2
             return jacobian @ cov @ jacobian.T
+
+    def save(self, save_dir, key=None):
+        """
+        Save the systematic uncertainty to a file.
+
+        Parameters
+        ----------
+        save_dir : str
+            The directory to save the systematic uncertainty to.
+        key : str, optional
+            The key to use for the systematic uncertainty. If None, all
+            variables are saved.
+        """
+        if key is None:
+            for name in self._variables.keys():
+                if 'nsigma' in name:
+                    continue
+                try:
+                    np.savetxt(f'{save_dir}/{self._name}_{name}_cov.csv', self._covariances[f'{self._name}_{name}'], delimiter=',')
+                    np.savetxt(f'{save_dir}/{self._name}_{name}_fracuncs.csv', self._frac_uncs[f'{self._name}_{name}'], delimiter=',')
+                    np.savetxt(f'{save_dir}/{self._name}_{name}_cv.csv', self._cv_histograms[f'{self._name}_{name}'], delimiter=',')
+                    np.savetxt(f'{save_dir}/{self._name}_{name}_binedges.csv', self._bin_edges[f'{self._name}_{name}'], delimiter=',')
+                except:
+                    raise ValueError(f'{self._name}_{name} not found. Available keys: {self._cv_histograms.keys()}')
+        else:
+            if 'nsigma' in key:
+                return
+            try:
+                np.savetxt(f'{save_dir}/{key}_cov.csv', self._covariances[f'{key}'], delimiter=',', header=f'{key} covariance matrix')
+                np.savetxt(f'{save_dir}/{key}_fracuncs.csv', self._frac_uncs[f'{key}'], delimiter=',')
+                np.savetxt(f'{save_dir}/{key}_cv.csv', self._cv_histograms[f'{key}'], delimiter=',')
+                np.savetxt(f'{save_dir}/{key}_binedges.csv', self._bin_edges[f'{key}'], delimiter=',')
+            except:
+                raise ValueError(f'{key} not found. Available keys: {self._cv_histograms.keys()}')
 
     def __repr__(self):
         s = f'--Systematic({self._name}, {self._label})--'

@@ -14,6 +14,8 @@
 #define MUON_MASS 105.6583745
 #define PION_MASS 139.57039
 #define PROTON_MASS 938.2720813
+#define PLACEHOLDERVALUE std::numeric_limits<double>::quiet_NaN()
+#define BEAM_IS_NUMI false
 
 #include "include/particle_utilities.h"
 #include "scorers.h"
@@ -33,6 +35,26 @@
  */
 namespace pvars
 {
+    /**
+     * Save the particle's ID
+     */
+    template<class T>
+    double id(const T & p)
+    {
+        return p.id;
+    }
+    REGISTER_VAR_SCOPE(RegistrationScope::BothParticle, id, id);
+
+    /**
+     * Save the particle's interaction ID
+     */
+    template<class T>
+    double interaction_id(const T & p)
+    {
+        return p.interaction_id;
+    }
+    REGISTER_VAR_SCOPE(RegistrationScope::BothParticle, interaction_id, interaction_id);
+
     /**
      * @brief Variable for the particle's primary classification.
      * @details This variable returns the primary classification of the particle.
@@ -169,6 +191,26 @@ namespace pvars
     REGISTER_VAR_SCOPE(RegistrationScope::BothParticle, mass, mass);
 
     /**
+     * KE for PID
+    */
+    template<class T>
+    double csda_ke_pid(const T & p, int pid)
+    {
+        return p.csda_ke_per_pid[pid];
+    }
+    REGISTER_VAR_SCOPE(RegistrationScope::BothParticle, csda_ke_pid, csda_ke_pid);
+
+    /**
+     * MCS KE for PID
+    */
+    template<class T>
+    double mcs_ke_pid(const T & p, int pid)
+    {
+        return p.mcs_ke_per_pid[pid];
+    }
+    REGISTER_VAR_SCOPE(RegistrationScope::BothParticle, mcs_ke_pid, mcs_ke_pid);
+
+    /**
      * @brief Variable for the CSDA kinetic energy of the particle.
      * @details The CSDA kinetic energy is calculated upstream in the SPINE
      * reconstruction by relating the length of the track to the energy loss
@@ -269,6 +311,61 @@ namespace pvars
         return energy;
     }
     REGISTER_VAR_SCOPE(RegistrationScope::BothParticle, energy, energy);
+
+    /**
+     * Kinetic energy for PID
+     */
+    template<class T>
+    double ke_pid(const T & p, int pid)
+    {
+        double energy(0);
+        if constexpr (std::is_same_v<T, caf::SRParticleTruthDLPProxy>)
+        {
+            energy = p.energy_init - mass(p);
+        }
+        else
+        {
+            if(pid < 2) [[likely]]
+                energy += calo_ke(p);
+            else
+            {
+                if(p.is_contained) energy += csda_ke_pid(p,pid);
+                else energy += mcs_ke_pid(p,pid);
+            }
+        }
+        return energy;
+    }
+    REGISTER_VAR_SCOPE(RegistrationScope::BothParticle, ke_pid, ke_pid);
+    
+    /**
+     * Momentum for PID
+     */
+    template<class T>
+    double momentum_pid(const T & p, int pid)
+    {
+        double ke = ke_pid(p,pid);
+        double m = 0;
+        if (pid == 0){
+            m = 0;
+        }
+        else if (pid == 1){
+            m = ELECTRON_MASS;
+        }
+        else if (pid == 2){
+            m = MUON_MASS;
+        }
+        else if (pid == 3){
+            m = PION_MASS;
+        }
+        else if (pid == 4){
+            m = PROTON_MASS;
+        }
+        else{
+            m = PLACEHOLDERVALUE;
+        }
+        return std::sqrt(ke*ke + m*m);
+    }
+    REGISTER_VAR_SCOPE(RegistrationScope::BothParticle, momentum_pid, momentum_pid);
 
     /**
      * @brief Variable for the length of the particle track.
@@ -406,6 +503,21 @@ namespace pvars
         return std::acos(p.start_dir[0] * wx + p.start_dir[1] * wy + p.start_dir[2] * wz);
     }
     REGISTER_VAR_SCOPE(RegistrationScope::BothParticle, theta_xw_m30, theta_xw_m30);
+
+
+    /**
+     * @brief Variable for the costheta of the particle with respect to the beam direction.
+     * @details The costheta is calculated as the cosine of the angle between the particle momentum and the beam direction.
+     * @tparam T the type of particle (true or reco).
+     * @param p the particle to apply the variable on.
+     * @return the costheta of the particle with respect to the beam direction.
+     */
+    template<class T>
+    double costheta(const T & p)
+    {
+        return p.start_dir[2];
+    }
+    REGISTER_VAR_SCOPE(RegistrationScope::BothParticle, costheta, costheta);
 
     /**
      * @brief Variable for the x-coordinate of the particle starting point.
@@ -625,6 +737,20 @@ namespace pvars
         return p.momentum[2];
     }
     REGISTER_VAR_SCOPE(RegistrationScope::BothParticle, pz, pz);
+
+    /**
+     * @brief Variable for the momentum of the particle.
+     * @details The momentum is predicted upstream in the SPINE reconstruction.
+     * @tparam T the type of particle (true or reco).
+     * @param p the particle to apply the variable on.
+     * @return the momentum of the particle.
+     */
+    template<class T>
+    double momentum(const T & p)
+    {
+        return std::sqrt(pvars::px(p) * pvars::px(p) + pvars::py(p) * pvars::py(p) + pvars::pz(p) * pvars::pz(p));
+    }
+    REGISTER_VAR_SCOPE(RegistrationScope::BothParticle, momentum, momentum);
     
     /**
      * @brief Variable for the transverse momentum of a particle.
@@ -647,6 +773,85 @@ namespace pvars
         return utilities::magnitude(pt);
     }
     REGISTER_VAR_SCOPE(RegistrationScope::BothParticle, dpT, dpT);
+
+    /**
+     * @brief Variable for the particle's primary classification.
+     * @details This variable returns the primary classification of the
+     * particle. The primary classification is determined upstream in the SPINE
+     * reconstruction and is based on the softmax scores of the particle. This
+     * function uses the "nominal" primary classification that is made upstream
+     * in the SPINE reconstruction.
+     * @tparam T the type of particle (true or reco).
+     * @param p the particle to apply the variable on.
+     * @return the primary classification of the particle.
+     */
+    template<class T>
+    double default_primary_classification(const T & p)
+    {
+        return p.is_primary ? 1 : 0;
+    }
+    REGISTER_VAR_SCOPE(RegistrationScope::RecoParticle, default_primary_classification, default_primary_classification);
+
+        /**
+     * @brief Variable for assigning primary classification based on the
+     * particle's softmax scores.
+     * @details This variable assigns a primary classification based on the
+     * softmax scores of the particle. This function places a relaxed threshold
+     * on the primary softmax score to reduce observed inefficiencies in the
+     * primary classification.
+     * @tparam T the type of particle (true or reco).
+     * @param p the particle to apply the variable on.
+     * @return the primary classification of the particle.
+     */
+    template<class T>
+    double lax_primary_classification(const T & p)
+    {
+        return p.primary_scores[1] > 0.10 ? 1 : 0;
+    }
+    REGISTER_VAR_SCOPE(RegistrationScope::RecoParticle, lax_primary_classification, lax_primary_classification);
+
+    /**
+     * @brief Variable for the particle's PID.
+     * @details This variable returns the PID of the particle. The PID is
+     * determined by the softmax scores of the particle. This function uses the
+     * "nominal" PID decision that is made upstream in the SPINE reconstruction.
+     * @param p the particle to apply the variable on.
+     * @return the PID of the particle.
+     */
+    template<class T>
+    double default_pid(const T & p)
+    {
+        return p.pid;
+    }
+    REGISTER_VAR_SCOPE(RegistrationScope::RecoParticle, default_pid, default_pid);
+
+    /**
+     * @brief Variable for assigning PID based on the particle's softmax
+     * scores.
+     * @details This variable assigns a PID based on the softmax scores of the
+     * particle. Nominally, the PID is assigned based on the highest softmax
+     * score, but the PID can be overridden directly by this function to
+     * effectively loosen the requirements to assign a muon type PID to a
+     * particle.
+     * @param p the particle to apply the variable on.
+     * @return the PID of the particle.
+     */
+    template<class T>
+    double lax_muon_pid(const T & p)
+    {
+        double pid = std::numeric_limits<double>::quiet_NaN();
+        if(p.pid_scores[2] > 0.25)
+            pid = 2;
+        else
+        {
+            size_t high_index(0);
+            for(size_t i(0); i < 5; ++i)
+                if(p.pid_scores[i] > p.pid_scores[high_index]) high_index = i;
+            pid = high_index;
+        }
+        return pid;
+    }
+    REGISTER_VAR_SCOPE(RegistrationScope::RecoParticle, lax_muon_pid, lax_muon_pid);
 
     /**
      * @brief Variable for the polar angle (w.r.t the z-axis) of the particle.
@@ -825,5 +1030,19 @@ namespace pvars
         return p.primary_scores[0];
     }
     REGISTER_VAR_SCOPE(RegistrationScope::RecoParticle, secondary_softmax, secondary_softmax);
+
+    /**
+     * @brief Variable for the start dedx of the particle.
+     * @details The start dedx is the energy loss of the particle in the detector.
+     * @tparam T the type of particle (true or reco).
+     * @param p the particle to apply the variable on.
+     * @return the start dedx of the particle.
+     */
+    template<class T>
+    double start_dedx(const caf::SRParticleDLPProxy & p)
+    {
+        return p.start_dedx;
+    }
+    REGISTER_VAR_SCOPE(RegistrationScope::RecoParticle, start_dedx, start_dedx);
 }
 #endif // PARTICLE_VARIABLES_H

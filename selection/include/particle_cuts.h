@@ -120,5 +120,23 @@ namespace pcuts
         return pvars::pid(p) == static_cast<size_t>(params[0]);
     }
     REGISTER_CUT_SCOPE(RegistrationScope::BothParticle, is_pid, is_pid);
+
+    /**
+     * @brief Start dedx cut on only exiting muons. Used for non-AV rejection.
+     * @details Checks if the particle is a muon, is not contained, and has a 
+     * start dedx value greater than the threshold.
+     * @tparam T the type of particle (true or reco).
+     * @param p the particle to check.
+     * @param params the parameters for the cut. In this case, this sets the
+     * start dedx threshold. Defaults to 3.5.
+     * @return true if the particle is a muon, is not contained, and has a 
+     * start dedx value greater than the threshold.
+    */
+   template<class T>
+   bool start_dedx_cut(const caf::SRParticleDLPProxy & p, std::vector<double> params={3.5,})
+   {
+        return pvars::pid(p) == 2 && !p.is_contained && p.start_dedx > params[0];
+   }
+   REGISTER_CUT_SCOPE(RegistrationScope::RecoParticle, start_dedx_cut, start_dedx_cut);
 }
 #endif // PARTICLE_CUTS_H

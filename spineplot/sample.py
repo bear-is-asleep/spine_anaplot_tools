@@ -38,7 +38,7 @@ class Sample:
     """
     def __init__(self, name, rf, category_branch, key, exposure_type,
                  trees, systematics=None, override_exposure=None, precompute=None,
-                 presel=None, override_category=None, print_sys=False) -> None:
+                 presel=None, override_category=None, print_sys=False, save_dir=None) -> None:
         """
         Initializes the Sample object with the given name and key.
 
@@ -77,7 +77,9 @@ class Sample:
         override_category : int
             The category to override the category branch with if it is
             configured. Else, the category branch is left as is.
-
+        save_dir : str, optional
+            The directory to save the systematic uncertainties to. The
+            default is None.
         Returns
         -------
         None.
@@ -89,7 +91,7 @@ class Sample:
         self._exposure_livetime = self._file_handle['Livetime'].to_numpy()[0][0]
         self._category_branch = category_branch
         self._print_sys = print_sys
-
+        self._save_dir = save_dir
         if override_exposure is not None:
             self.override_exposure(override_exposure, exposure_type)
 
@@ -112,8 +114,10 @@ class Sample:
         # Check category branch for NaNs
         if np.isnan(self._data[self._category_branch]).any():
             occurrences = len(self._data[self._data[self._category_branch].isna()])
+            mask = ~self._data[self._category_branch].isna()
+            self._presel_mask &= mask
             print(f'Found NaN category in Sample `{self._name}` with {occurrences} occurrence(s). Masking NaNs...')
-            self._data = self._data[~self._data[self._category_branch].isna()]
+            self._data = self._data[mask]
 
         # Initialize the systematics dictionary for the sample. Note:
         # the sample will always have a statistical uncertainty.
@@ -125,12 +129,12 @@ class Sample:
         if systematics is not None:    
             for sys in systematics:
                 systs = [k for k in self._file_handle[sys].keys() if k not in ['Run', 'Subrun', 'Evt']]
-                self._systematics.update({syst: Systematic(syst, self._file_handle[sys][syst]) for syst in systs})
+                self._systematics.update({syst: Systematic(syst, self._file_handle[sys][syst], save_dir=self._save_dir) for syst in systs})
         
         # Add statistical uncertainty. This can always be added to the
         # sample, because it is not dependent on some external source
         # of weights.
-        self._systematics.update({f'{self._name}_statistical': Systematic('statistical', None)})
+        self._systematics.update({f'{self._name}_statistical': Systematic('statistical', None, save_dir=self._save_dir)})
 
     def override_exposure(self, exposure, exposure_type='pot') -> None:
         """
@@ -179,10 +183,9 @@ class Sample:
         else:
             scale = target._exposure_livetime / self._exposure_livetime
 
-        print(f"Setting weight for {self._name} to {scale:.2e}")
         self._data['weight'] = scale
         for syst in self._systematics.values():
-            syst.set_weight(scale)        
+            syst.set_weight(scale)
 
     def get_data(self, variables, with_mask=None) -> dict:
         """
@@ -237,29 +240,42 @@ class Sample:
         recipes : list
             A list of dictionaries containing the recipes for
             combinations of systematic uncertainties.
+        
 
         Returns
         -------
         None.
         """
+        
         for syst in self._systematics.values():
             syst.process(self, self._presel_mask)
+        # print('---Original systematic (by variable):')
+        # for sysname, syst in self._systematics.items():
+        #     for vname in syst._variables.keys():
+        #         std_val = syst._std_by_variable.get(vname, None)
+        #         print(f'{sysname}[{vname}] std: {std_val}')
                 
         # Each recipe has a name, which is used to identify the
         # combination of systematic uncertainties, and a pattern,
         # which is used to build a list of Systematic objects to
         # combine.
         for recipe in recipes:
-            regxp = re.compile(recipe['pattern'])
-            systematics = [syst for k, syst in self._systematics.items() if regxp.match(k)]
+            pattern = recipe['pattern']
+            exclude = '_nsigma'
+            regxp = re.compile(rf'^(?!.*{exclude}).*{pattern}.*$')
+            systematics = [v for k,v in self._systematics.items() if regxp.search(k)]
 
             # If there are no systematics to combine, skip the recipe.
             if len(systematics) == 0:
                 continue
 
             # Combine the systematics and add the new Systematic object
-            syst = Systematic.combine(systematics, recipe['name'], recipe.get('label', None))
+            syst = Systematic.combine(systematics, recipe['name'], recipe.get('label', None), save_dir=self._save_dir)
             self._systematics[syst._name] = syst
+
+            # Save the combined systematic
+            if self._save_dir is not None:
+                syst.save(self._save_dir)
         
         # Print the systematics for the sample (if requested).
         if self._print_sys:

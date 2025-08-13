@@ -1,32 +1,42 @@
 
 [[this_includes]]
-file = '/exp/sbnd/app/users/brindenc/develop/medulla_area/medulla/spineplot/configurations/common/variables.toml'
+file = '/exp/sbnd/app/users/brindenc/develop/medulla_area/medulla/spineplot/configurations/analyses/sbnd/numu_incl2025_sbnd_variables.toml'
 
 [[this_includes]]
 file = '/exp/sbnd/app/users/brindenc/develop/medulla_area/medulla/spineplot/configurations/common/styles.toml'
 
 [samples]
 [samples.mc]
-key = "simulation"
-exposure_type = "pot"
-trees = ['selected1mu1p','signal1mu1p']
+key = 'simulation'
+exposure_type = 'pot'
+trees = ['selected1muX','signal1muX']
+precompute = { reco_leading_muon_momentum_gev = "reco_leading_muon_momentum / 1000.0", reco_leading_muon_costheta = "reco_leading_muon_costheta", reco_flash_hypothesis = "reco_flash_hypothesis", reco_flash_total_pe = "reco_flash_total_pe", reco_flash_score = "reco_flash_score" }
 
 [output]
 path = '/exp/sbnd/data/users/brindenc/medulla/test/tmp'
 
 [analysis]
 ordinate_sample = 'mc'
-category_branch = 'category'
-category_assignment = [[0,2], [1,3,4,5,6], [7], [-1,8]]
-category_labels = ['1$\mu$Np', 'Other CC $\nu$', 'NC $\nu$', 'Cosmic']
-category_colors = ['C0', 'C1', 'C3', 'C4', 'black']
-category_types = ['histogram', 'histogram', 'histogram', 'histogram']
+category_branch = 'true_category'
+category_assignment = [[0], [1], [2,3], [4], [5], [6], [7]]
+category_labels = ['$\nu_\mu$ CC (cont.)', '$\nu_\mu$ CC (exit)', '$\nu_\mu$ CC (OOPS)', 'Non-AV', '$\nu_e$ CC', 'NC', 'Cosmic']
+category_colors = ['gold','goldenrod','purple','sienna','blue','green','red']
+category_types = ['histogram', 'histogram', 'histogram', 'histogram', 'histogram', 'histogram', 'histogram']
 
 [[figure]]
-name = 'reco_edep'
+name = 'reco_leading_muon_momentum_gev'
 type = 'SimpleFigure'
-style = 'selected_icarus'
+style = 'selected_sbnd'
 [[figure.artists]]
 type = 'SpineSpectra1D'
-variable = 'reco_visible_energy'
+variable = 'reco_leading_muon_momentum_gev'
 draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false}
+
+[[figure]]
+name = 'reco_flash_score'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_flash_score'
+draw_kwargs = {'logx' = true, 'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false}

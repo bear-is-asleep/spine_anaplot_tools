@@ -14,8 +14,8 @@
 #include <vector>
 
 #include "framework.h"
-#include "include/particle_cuts.h"
-#include "include/particle_variables.h"
+#include "particle_cuts.h"
+#include "particle_variables.h"
 
 /**
  * @namespace selectors
@@ -38,10 +38,11 @@ namespace selectors
      * @tparam T the type of interaction (true or reco).
      * @param obj the interaction to operate on.
      * @param pid of the particle type.
+     * @param ke_threshold the kinetic energy threshold for the particle.
      * @return the index of the leading particle (highest KE). 
      */
     template <class T>
-    size_t leading_particle_index(const T & obj, uint16_t pid)
+    size_t leading_particle_index(const T & obj, uint16_t pid, double ke_threshold=0)
     {
         double leading_ke(0);
         size_t index(kNoMatch);
@@ -49,7 +50,7 @@ namespace selectors
         {
             const auto & p = obj.particles[i];
             double energy(pvars::ke(p));
-            if(pvars::pid(p) == pid && energy > leading_ke)
+            if(pvars::pid(p) == pid && energy > ke_threshold && energy > leading_ke)
             {
                 leading_ke = energy;
                 index = i;
@@ -95,14 +96,33 @@ namespace selectors
      * kinetic energy.
      * @tparam T the type of interaction (true or reco).
      * @param obj the interaction to operate on.
+     * @param ke_threshold the kinetic energy threshold for the muon. Defaults to 25 MeV.
      * @return the index of the leading muon (highest KE).
      */
     template<class T>
-    size_t leading_muon(const T & obj)
+    size_t leading_muon(const T & obj, double ke_threshold=25)
     {
-        return leading_particle_index(obj, 2);
+        return leading_particle_index(obj, 2, ke_threshold);
     }
     REGISTER_SELECTOR(leading_muon, leading_muon);
+
+    /**
+     * Find the index of the matched muon
+     */
+    template<class T>
+    size_t leading_matched_muon(const T & obj, double ke_threshold=25)
+    {
+        size_t index(leading_muon(obj, ke_threshold));
+        if (index != kNoMatch)
+        {
+            return obj.particles[index].match_ids[0]; //0th index is best match
+        }
+        else
+        {
+            return PLACEHOLDERVALUE;
+        }
+    }
+    REGISTER_SELECTOR(leading_matched_muon, leading_matched_muon);
 
     /**
      * @brief Finds the index corresponding to the leading pion.
@@ -133,5 +153,23 @@ namespace selectors
         return leading_particle_index(obj, 4);
     }
     REGISTER_SELECTOR(leading_proton, leading_proton);
+
+    /**
+     * Leading muon match ID
+     */
+    template<class T>
+    double leading_muon_match_id(const T & obj, double ke_threshold=25)
+    {
+        size_t index(selectors::leading_muon(obj, ke_threshold));
+        if (index != kNoMatch)
+        {
+            return obj.particles[index].match_ids[0]; //0th index is best match
+        }
+        else
+        {
+            return PLACEHOLDERVALUE;
+        }
+    }
+    REGISTER_VAR_SCOPE(RegistrationScope::Both, leading_muon_match_id, leading_muon_match_id);
 }
 #endif // SELECTORS_H

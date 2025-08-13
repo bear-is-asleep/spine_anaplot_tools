@@ -106,31 +106,54 @@ class Registry
 };
 
 //-----------------------------------------------------------------------------
-// 2) Raw function registries
+// 2) Type aliases for the different function types
 //-----------------------------------------------------------------------------
 /**
- * @brief Alias for raw Cut functions with signature bool(const EventT&).
+ * @brief Type alias for a function that applies a cut to an event.
+ * @details This type alias is used to simplify the code and make it easier
+ * to read. It represents a function that takes an event object and returns
+ * a boolean indicating whether the event passes the cut.
+ * @tparam EventT The type of event: @ref TType or @ref RType.
  */
 template<typename EventT>
 using CutFn = std::function<bool(const EventT&)>;
 
 /**
- * @brief Alias for raw Variable functions with signature double(const EventT&).
+ * @brief Type alias for a function that computes a variable from an event.
+ * @details This type alias is used to simplify the code and make it easier
+ * to read. It represents a function that takes an event object and returns
+ * a double representing the value of the variable.
+ * @tparam EventT The type of event: @ref TType or @ref RType.
  */
 template<typename EventT>
 using VarFn = std::function<double(const EventT&)>;
 
 /**
- * @brief Alias for Selector functions with signature size_t(const EventT&).
+ * @brief Type alias for a function that selects a particle from an interaction.
+ * @details This type alias is used to simplify the code and make it easier
+ * to read. It represents a function that takes an interaction object and returns
+ * the index of the selected particle.
+ * @tparam EventT The type of event: @ref TType or @ref RType.
  */
 template<typename EventT>
 using SelectorFn = std::function<size_t(const EventT&)>;
+
+/**
+ * @brief Type alias for a function that selects a particle from the full event context.
+ * @details This type alias is used for cross-type selectors that need access to the
+ * full StandardRecord to perform cross-referencing between true and reco interactions.
+ * @param sr The full StandardRecord containing all interactions.
+ * @param interaction_idx The index of the interaction to operate on.
+ * @param interaction_type The type of interaction ("true" or "reco").
+ * @return The index of the selected particle within the specified interaction.
+ */
+using CrossTypeSelectorFn = std::function<size_t(const caf::Proxy<caf::StandardRecord>*, size_t, const std::string&)>;
 
 //-----------------------------------------------------------------------------
 // 3) Factory function registries
 //-----------------------------------------------------------------------------
 /**
- * @brief A factory function: given params, returns a CutFn<EventT>
+ * @brief Type alias for a factory function: given params, returns a CutFn<EventT>
  */
 template<typename EventT>
 using CutFactory = std::function<CutFn<EventT>(const std::vector<double>&)>;
@@ -139,7 +162,7 @@ template<typename EventT>
 using CutFactoryRegistry = Registry<CutFactory<EventT>>;
 
 /**
- * @brief A factory function: given params, returns a VarFn<EventT>
+ * @brief Type alias for a factory function: given params, returns a VarFn<EventT>
  */
 template<typename EventT>
 using VarFactory = std::function<VarFn<EventT>(const std::vector<double>&)>;
@@ -148,13 +171,20 @@ template<typename EventT>
 using VarFactoryRegistry = Registry<VarFactory<EventT>>;
 
 /**
- * @brief A factory function: given params, returns a SelectorFn<EventT>
+ * @brief Type alias for a factory function: given params, returns a SelectorFn<EventT>
  */
 template<typename EventT>
 using SelectorFactory = std::function<SelectorFn<EventT>(const std::vector<double>&)>;
 
 template<typename EventT>
 using SelectorFactoryRegistry = Registry<SelectorFactory<EventT>>;
+
+/**
+ * @brief Type alias for a factory function: given params, returns a CrossTypeSelectorFn
+ */
+using CrossTypeSelectorFactory = std::function<CrossTypeSelectorFn(const std::vector<double>&)>;
+
+using CrossTypeSelectorFactoryRegistry = Registry<CrossTypeSelectorFactory>;
 
 /**
  * @brief Bind a function to a specific parameter set.
@@ -175,6 +205,11 @@ inline std::function<ValueT(const EventT&)> bind(const std::vector<double>& pars
 {
     if constexpr(std::is_invocable_v<decltype(F), const EventT&, const std::vector<double>&>)
         return [pars](const EventT& e){ return F(e, pars); };
+    else if constexpr(std::is_invocable_v<decltype(F), const EventT&, double>)
+        return [pars](const EventT& e){ 
+            double param = pars.empty() ? 25.0 : pars[0];  // Default to 25.0 MeV TODO: Fix this
+            return F(e, param); 
+        };
     else
         return [=](const EventT& e){ return F(e); };
 }
@@ -267,6 +302,19 @@ namespace                                                                       
         );                                                                                 \
         SelectorFactoryRegistry<RType>::instance().register_fn(                            \
             "reco_" #name, bind<fn<RType>, RType, size_t>                                  \
+        );                                                                                 \
+        return true;                                                                       \
+    }();                                                                                   \
+}
+
+// Register a cross-type selector that can work on both true and reco interactions
+// and has access to the full StandardRecord for cross-referencing.
+#define REGISTER_CROSS_TYPE_SELECTOR(name, fn)                                             \
+namespace                                                                                  \
+{                                                                                          \
+    const bool _reg_cross_selector_##name = []{                                            \
+        CrossTypeSelectorFactoryRegistry::instance().register_fn(                          \
+            "cross_" #name, bind<fn, CrossTypeSelectorFn, size_t>                          \
         );                                                                                 \
         return true;                                                                       \
     }();                                                                                   \

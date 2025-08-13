@@ -1,0 +1,208 @@
+
+[[this_includes]]
+file = '/exp/sbnd/app/users/brindenc/develop/medulla_area/medulla/spineplot/configurations/analyses/sbnd/numu_incl2025_sbnd_variables.toml'
+
+[[this_includes]]
+file = '/exp/sbnd/app/users/brindenc/develop/medulla_area/medulla/spineplot/configurations/common/styles.toml'
+
+[samples]
+[samples.mc_nu]
+key = 'simulation'
+exposure_type = 'pot'
+trees = ['selected1muXNu']
+precompute = { reco_leading_muon_momentum_gev = "reco_leading_muon_momentum / 1000.0"}
+
+[samples.mc_cos]
+key = 'simulation'
+exposure_type = 'pot'
+trees = ['selected1muXCos']
+precompute = { reco_leading_muon_momentum_gev = "reco_leading_muon_momentum / 1000.0"}
+
+[output]
+path = '/exp/sbnd/data/users/brindenc/medulla/test/tmp'
+
+[analysis]
+ordinate_sample = 'data'
+category_branch = 'true_category'
+category_assignment = [[0], [1], [2,3], [4], [5], [6], [7], [-1]]
+category_labels = ['$\nu_\mu$ CC (cont.)', '$\nu_\mu$ CC (exit)', '$\nu_\mu$ CC (OOPS)', 'Non-AV', '$\nu_e$ CC', 'NC', 'Cosmic', 'Data']
+category_colors = ['gold','goldenrod','purple','sienna','blue','green','red', 'black']
+category_types = ['histogram', 'histogram', 'histogram', 'histogram', 'histogram', 'histogram', 'histogram', 'scatter']
+
+[samples.data]
+key = 'data'
+exposure_type = 'pot'
+override_category = -1
+trees = ['selected1muXNu']
+precompute = { reco_leading_muon_momentum_gev = "reco_leading_muon_momentum / 1000.0"}
+
+[[figure]]
+name = 'reco_leading_muon_momentum_gev'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_leading_muon_momentum_gev'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false}
+
+[[figure]]
+name = 'reco_leading_muon_costheta'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_leading_muon_costheta'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false}
+
+[[figure]]
+name = 'reco_leading_muon_start_dedx'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_leading_muon_start_dedx'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false}
+
+[[figure]]
+name = 'reco_leading_muon_length'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_leading_muon_length'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false}
+
+[[figure]]
+name = 'reco_flash_hypothesis'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_flash_hypothesis'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false}
+
+[[figure]]
+name = 'reco_flash_total_pe'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_flash_total_pe'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false}
+
+[[figure]]
+name = 'reco_leading_muon_end_x'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_leading_muon_end_x'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false, 'bbox_to_anchor' = [1.0, 1.0], 'loc' = 'upper left'}
+
+[[figure]]
+name = 'reco_leading_muon_end_y'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_leading_muon_end_y'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false , 'bbox_to_anchor' = [1.0, 1.0], 'loc' = 'upper left'}
+
+[[figure]]
+name = 'reco_leading_muon_end_z'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_leading_muon_end_z'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false , 'bbox_to_anchor' = [1.0, 1.0], 'loc' = 'upper left'}
+
+[[figure]]
+name = 'reco_leading_muon_start_x'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_leading_muon_start_x'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false , 'bbox_to_anchor' = [1.0, 1.0], 'loc' = 'upper left'}
+
+[[figure]]
+name = 'reco_leading_muon_start_y'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_leading_muon_start_y'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false , 'bbox_to_anchor' = [1.0, 1.0], 'loc' = 'upper left'}
+
+[[figure]]
+name = 'reco_leading_muon_start_z'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_leading_muon_start_z'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false , 'bbox_to_anchor' = [1.0, 1.0], 'loc' = 'upper left'}
+
+[[figure]]
+name = 'reco_vertex_x'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_vertex_x'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false , 'bbox_to_anchor' = [1.0, 1.0], 'loc' = 'upper left'}
+
+[[figure]]
+name = 'reco_vertex_y'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_vertex_y'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false , 'bbox_to_anchor' = [1.0, 1.0], 'loc' = 'upper left'}
+
+[[figure]]
+name = 'reco_vertex_z'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_vertex_z'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false , 'bbox_to_anchor' = [1.0, 1.0], 'loc' = 'upper left'}
+
+[[figure]]
+name = 'reco_leading_muon_muon_softmax'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_leading_muon_muon_softmax'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false}
+
+[[figure]]
+name = 'reco_leading_muon_pion_softmax'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_leading_muon_pion_softmax'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false}
+
+[[figure]]
+name = 'reco_leading_muon_proton_softmax'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_leading_muon_proton_softmax'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false}
+
+[[figure]]
+name = 'reco_leading_muon_primary_softmax'
+type = 'SimpleFigure'
+style = 'selected_sbnd'
+[[figure.artists]]
+type = 'SpineSpectra1D'
+variable = 'reco_leading_muon_primary_softmax'
+draw_kwargs = {'show_component_number' = true, 'show_component_percentage' = true, 'invert_stack_order' = false}

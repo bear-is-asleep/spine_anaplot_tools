@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from matplotlib.collections import PatchCollection
 
-def mark_pot(ax, exposure, horizontal=False, vadj=0) -> None:
+def mark_pot(ax, exposure, horizontal=True, vadj=0) -> None:
     """
     Add the POT information to the plot. The POT information will
     either be added to the top right corner of the plot along the
@@ -41,7 +41,7 @@ def mark_pot(ax, exposure, horizontal=False, vadj=0) -> None:
         usex = xrange[0] - 0.12*(xrange[1] - xrange[0])
         ax.text(x=usex, y=usey, s=s, fontsize=13, color='black', verticalalignment='top', rotation=90)
 
-def mark_preliminary(ax, label, vadj=0, hadj=0) -> None:
+def mark_preliminary(ax, label, x=0.0, y=1.017, **kwargs) -> None:
     """
     Add a preliminary label to the plot.
 
@@ -52,22 +52,17 @@ def mark_preliminary(ax, label, vadj=0, hadj=0) -> None:
     label : str
         The label to add to the plot to indicate that the plot is
         preliminary.
-    vadj : float, optional
-        The vertical adjustment to use when adding the label. The
-        default is 0.
-    hadj : float, optional
-        The horizontal adjustment to use when adding the label. The
-        default is 0.
+    x : float, optional
+        The x-coordinate of the preliminary label. The default is 0.0.
+    y : float, optional
+        The y-coordinate of the preliminary label. The default is 1.017.
 
     Returns
     -------
     None.
     """
-    yrange = ax.get_ylim()
-    usey = yrange[1] + 0.01*(yrange[1] - yrange[0]) + vadj*(yrange[1] - yrange[0])
-    xrange = ax.get_xlim()
-    usex = xrange[0] + 0.025*(xrange[1] - xrange[0]) + hadj*(xrange[1] - xrange[0])
-    ax.text(x=usex, y=usey, s=label, fontsize=14, color='#d67a11')
+
+    ax.text(x=x, y=y, s=label, fontsize=14, color='#d67a11', transform=ax.transAxes, **kwargs)
 
 def draw_error_boxes(ax, x, y, xerr, yerr, **kwargs):
     """

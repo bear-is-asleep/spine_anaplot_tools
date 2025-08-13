@@ -20,8 +20,9 @@
 #include "sbnanaobj/StandardRecord/SRInteractionTruthDLP.h"
 #include "sbnanaobj/StandardRecord/Proxy/EpilogFwd.h"
 
-#include "include/particle_variables.h"
+#include "particle_variables.h"
 #include "include/particle_cuts.h"
+#include "include/selectors.h"
 #include "include/cuts.h"
 #include "include/utilities.h"
 #include "include/particle_utilities.h"
@@ -212,6 +213,23 @@ namespace vars
     template<class T>
     double flash_hypothesis(const T & obj) { return obj.flash_hypo_pe; }
     REGISTER_VAR_SCOPE(RegistrationScope::Reco, flash_hypothesis, flash_hypothesis);
+
+
+    /**
+     * @brief Variable for the flash score of the interaction.
+     * @details The flash score is the score assigned to the interaction by the
+     * OpT0Finder likelihood method.
+     * @tparam T the type of interaction (true or reco).
+     * @param obj the interaction to apply the variable on.
+     * @return the flash score of the interaction.
+     */
+    template<class T>
+    double flash_score(const T & obj) { 
+        if (obj.flash_scores.size() == 0)
+            return PLACEHOLDERVALUE;
+        return obj.flash_scores[0]; 
+    } //Assumes only one flash score per interaction (check this with later versions)
+    REGISTER_VAR_SCOPE(RegistrationScope::Reco, flash_score, flash_score);
 
     /**
      * @brief Variable for the x-coordinate of the interaction vertex.
@@ -668,5 +686,134 @@ namespace vars
         return count;
     }
     REGISTER_VAR_SCOPE(RegistrationScope::Both, proton_multiplicity, proton_multiplicity);
+
+    /**
+     * @brief Momentum of the best muon in the interaction.
+     * @details This function returns the momentum of the best muon in the interaction.
+     * The best muon is defined as the muon with the highest kinetic energy.
+     * @tparam T the type of interaction (true or reco).
+     * @param obj the interaction to apply the variable on.
+     * @return the momentum of the best muon in the interaction.
+     */
+    template<class T>
+    double leading_muon_momentum(const T & obj)
+    {
+        if (selectors::leading_muon(obj) > 0)
+        {
+            return pvars::momentum(obj.particles[selectors::leading_muon(obj)]);
+        }
+        else
+        {
+            return PLACEHOLDERVALUE;
+        }
+    }
+    REGISTER_VAR_SCOPE(RegistrationScope::Both, leading_muon_momentum, leading_muon_momentum);
+
+    /**
+     * @brief Costheta (with respect to the beam direction = z-axis) of the best muon in the interaction.
+     * @details This function returns the costheta of the best muon in the interaction.
+     * The best muon is defined as the muon with the highest kinetic energy.
+     * @tparam T the type of interaction (true or reco).
+     * @param obj the interaction to apply the variable on.
+     * @return the costheta of the best muon in the interaction.
+     */
+    template<class T>
+    double leading_muon_costheta(const T & obj)
+    {
+        if (selectors::leading_muon(obj) > 0)
+        {
+            return pvars::costheta(obj.particles[selectors::leading_muon(obj)]);
+        }
+        else
+        {
+            return PLACEHOLDERVALUE;
+        }
+    }
+    REGISTER_VAR_SCOPE(RegistrationScope::Both, leading_muon_costheta, leading_muon_costheta);
+
+    /**
+     * @brief Length of the best muon in the interaction.
+     * @details This function returns the length of the best muon in the interaction.
+     * The best muon is defined as the muon with the highest kinetic energy.
+     * @tparam T the type of interaction (true or reco).
+     * @param obj the interaction to apply the variable on.
+     * @return the length of the best muon in the interaction.
+     */
+    template<class T>
+    double leading_muon_length(const T & obj)
+    {
+        if (selectors::leading_muon(obj) > 0)
+        {
+            return pvars::length(obj.particles[selectors::leading_muon(obj)]);
+        }
+    }
+
+    /**
+     * @brief Wrapper for if the interaction is flash matched.
+     * @details This function is a wrapper for the flash match cut.
+     * @tparam T the type of interaction (true or reco).
+     * @param obj the interaction to apply the variable on.
+     * @return true if the interaction is flash matched.
+     */
+    template<class T>
+    double valid_flashmatch(const T & obj) { return cuts::valid_flashmatch_cut(obj); }
+    REGISTER_VAR_SCOPE(RegistrationScope::Both, valid_flashmatch, valid_flashmatch);
+
+    /**
+     * @brief Wrapper for if the interaction is fiducial.
+     * @details This function is a wrapper for the fiducial cut.
+     * @tparam T the type of interaction (true or reco).
+     * @param obj the interaction to apply the variable on.
+     * @return true if the interaction is fiducial.
+     */
+    template<class T>
+    double fiducial_bool(const T & obj, std::vector<double> params={}) {
+        return cuts::fiducial_cut(obj, params); }
+    REGISTER_VAR_SCOPE(RegistrationScope::Both, fiducial_bool, fiducial_bool);
+
+    /**
+     * @brief Wrapper for if the interaction has a muon.
+     * @details This function is a wrapper for the muon cut.
+     * @tparam T the type of interaction (true or reco).
+     * @param obj the interaction to apply the variable on.
+     * @param params the parameters for the cut. In this case, this sets the
+     * kinetic energy threshold for a muon to count towards the
+     * multiplicity. Defaults to 25 MeV.
+     * @return true if the interaction has a muon.
+     */
+    template<class T>
+    double has_muon_bool(const T & obj, std::vector<double> params={25.0,}) {
+        return cuts::has_muon(obj, params); }
+    REGISTER_VAR_SCOPE(RegistrationScope::Both, has_muon_bool, has_muon_bool);
+
+    /**
+     * @brief Wrapper for the leading muon start dedx cut.
+     * @details This function is a wrapper for the leading muon start dedx cut.
+     * @tparam T the type of interaction (true or reco).
+     * @param obj the interaction to apply the variable on.
+     * @param params the parameters for the cut. In this case, this sets the
+     * start dedx threshold for the leading muon. Defaults to 3.5.
+     * @return true if the interaction has a leading muon with a start dedx
+     * greater than the threshold.
+     */
+    template<class T>
+    double leading_muon_start_dedx_bool(const T & obj, std::vector<double> params={3.5,}) {
+        return cuts::leading_muon_start_dedx_cut(obj, params); }
+    REGISTER_VAR_SCOPE(RegistrationScope::Reco, leading_muon_start_dedx_bool, leading_muon_start_dedx_bool);
+
+
+    /**
+     * @brief Wrapper for the flash score cut.
+     * @details This function is a wrapper for the flash score cut.
+     * @tparam T the type of interaction (true or reco).
+     * @param obj the interaction to apply the variable on.
+     * @param params the parameters for the cut. In this case, this sets the
+     * flash score threshold. Defaults to 102.35.
+     * @return true if the interaction has a flash score greater than the threshold.
+     */
+    template<class T>
+    double flash_score_bool(const T & obj, std::vector<double> params={102.35,}) {
+        return cuts::flash_score_cut(obj, params); }
+    REGISTER_VAR_SCOPE(RegistrationScope::Both, flash_score_bool, flash_score_bool);
 }
 #endif // VARIABLES_H

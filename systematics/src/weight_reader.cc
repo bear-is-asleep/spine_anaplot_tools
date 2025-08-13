@@ -91,7 +91,13 @@ bool sys::WeightReader::next()
     if(!chain.GetTree() || !reader) return false;
     if(entry >= (size_t)chain.GetEntries()) return false;
     if(!reader->Next()) return false;
-    chain.GetEntry(++entry);
+    entry++; // Increment first
+    try {
+        chain.GetEntry(entry);
+    } catch (const std::exception& e) {
+        std::cerr << "Error reading entry " << entry << ": " << e.what() << std::endl;
+        return false;
+    }
     return true;
 }
 

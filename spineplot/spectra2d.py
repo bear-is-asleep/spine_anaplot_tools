@@ -180,11 +180,20 @@ class SpineSpectra2D(SpineSpectra):
             h = np.histogram(diag, bins=self._variables[0]._nbins, range=xr, weights=weights[category])
             self._plotdata_diagonal[self._categories[category]] += h[0]
             self._binedges_diagonal[self._categories[category]] = h[1]
+        
+        # If the sample has a save_dir, save the data to a csv file
+        if sample._save_dir is not None:
+            hist2d = np.zeros((self._variables[0]._nbins, self._variables[1]._nbins))
+            for category, values in self._plotdata.items():
+                hist2d += values
+            df = pd.DataFrame(hist2d.T, index=self._binedges[list(self._plotdata.keys())[0]][:-1] + np.diff(self._binedges[list(self._plotdata.keys())[0]]) / 2, columns=self._binedges[list(self._plotdata.keys())[0]][:-1] + np.diff(self._binedges[list(self._plotdata.keys())[0]]) / 2)
+            #Assume that we are plotting true vs reco, so we just need the x-variable name
+            df.to_csv(f'{sample._save_dir}/{self._variables[0]._key[5:]}_spectra2d.csv')
 
     def draw(self, ax, style, show_option='2d', draw_identity=True,
              draw_colorbar=True, invert_stack_order=False,
              fit_type=None, logx=False, logy=False, logz=False,
-             draw_stat_error=False) -> None:
+             draw_stat_error=False, save_csv_name=None) -> None:
         """
         Plots the data for the SpineSpectra2D object.
 
@@ -226,7 +235,9 @@ class SpineSpectra2D(SpineSpectra):
         draw_stat_error : bool
             A flag to indicate if the statistical error should be drawn
             on the plot. The default is False.
-        
+        save_csv_name : str, optional
+            The name of the CSV file to save the data to. The default is None,
+            which will not save the data.
         Returns
         -------
         None.
@@ -235,6 +246,10 @@ class SpineSpectra2D(SpineSpectra):
         
         if show_option == '2d' and self._plotdata is not None:
             values = np.sum([v for v in self._plotdata.values()], axis=0)
+            bincenters = self._binedges[list(self._plotdata.keys())[0]][:-1] + np.diff(self._binedges[list(self._plotdata.keys())[0]]) / 2
+            if save_csv_name is not None:
+                df = pd.DataFrame(values.T, index=bincenters, columns=bincenters) #Assume symmetric binning
+                df.to_csv(save_csv_name)
             binedges = self._binedges[list(self._plotdata.keys())[0]]
             
             # Find the minimum power of ten that is higher than the
@@ -305,7 +320,7 @@ class SpineSpectra2D(SpineSpectra):
         if style.mark_pot:
             mark_pot(ax, self._exposure, style.mark_pot_horizontal)
         if style.mark_preliminary is not None:
-            mark_preliminary(ax, style.mark_preliminary, hadj=0.035 if (style.scilimits and not logy) is not None else 0)
+            mark_preliminary(ax, style.mark_preliminary)
 
         # Set the axis to be logarithmic if requested.
         if logx:

@@ -15,7 +15,7 @@
 #include <array>
 
 #include "framework.h"
-#include "include/particle_variables.h"
+#include "particle_variables.h"
 #include "include/particle_cuts.h"
 
 /**

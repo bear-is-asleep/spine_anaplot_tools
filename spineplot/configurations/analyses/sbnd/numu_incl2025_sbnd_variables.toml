@@ -1,0 +1,170 @@
+[variables]
+
+[variables.reco_leading_muon_momentum]
+key = "reco_leading_muon_momentum"
+range = [0, 3000]
+nbins = 31
+xlabel = "Reconstructed $\\mu$ Momentum [MeV/c]"
+
+[variables.reco_leading_muon_momentum_gev]
+key = "reco_leading_muon_momentum_gev"
+range = [0.0, 2.5]
+nbins = 26
+xlabel = "Reconstructed $\\mu$ Momentum [GeV/c]"
+
+[variables.true_leading_muon_momentum_gev]
+key = "true_leading_muon_momentum_gev"
+range = [0.0, 2.5]
+nbins = 26
+xlabel = "True $\\mu$ Momentum [GeV/c]"
+
+[variables.reco_leading_muon_costheta]
+key = "reco_leading_muon_costheta"
+range = [-1, 1]
+nbins = 21
+xlabel = "Reconstructed $\\cos\\theta_\\mu$"
+
+[variables.true_leading_muon_costheta]
+key = "true_leading_muon_costheta"
+range = [-1, 1]
+nbins = 21
+xlabel = "True $\\cos\\theta_\\mu$"
+
+[variables.reco_leading_muon_start_dedx]
+key = "reco_leading_muon_start_dedx"
+range = [0, 7]
+nbins = 25
+xlabel = "Reconstructed $\\mu$ Start dE/dx [MeV/cm]"
+
+[variables.reco_leading_muon_length]
+key = "reco_leading_muon_length"
+range = [0, 1000]
+nbins = 25
+xlabel = "Reconstructed $\\mu$ Length [cm]"
+
+[variables.reco_flash_hypothesis]
+key = "reco_flash_hypothesis"
+range = [0.0, 1.0e5]
+nbins = 25
+xlabel = "Hypothesis Flash PE"
+
+[variables.reco_flash_total_pe]
+key = "reco_flash_total_pe"
+range = [0.0, 1.0e5]
+nbins = 25
+xlabel = "Flash PE"
+
+[variables.reco_flash_score]
+key = "reco_flash_score"
+range = [1.0, 1.0e7]
+nbins = 50
+xscale = "log"
+xlabel = "Flash Score"
+
+[variables.reco_flash_time]
+key = "reco_flash_time"
+range = [-2.2, 2.2]
+nbins = 25
+xlabel = "Flash Time [us]"
+
+[variables.reco_leading_muon_end_x]
+key = "reco_leading_muon_end_x"
+range = [-220, 220]
+nbins = 25
+xlabel = "Reconstructed $\\mu$ End X [cm]"
+
+[variables.reco_leading_muon_end_y]
+key = "reco_leading_muon_end_y"
+range = [-220, 220]
+nbins = 25
+xlabel = "Reconstructed $\\mu$ End Y [cm]"
+
+[variables.reco_leading_muon_end_z]
+key = "reco_leading_muon_end_z"
+range = [-20, 520]
+nbins = 25
+xlabel = "Reconstructed $\\mu$ End Z [cm]"
+
+[variables.reco_leading_muon_start_x]
+key = "reco_leading_muon_start_x"
+range = [-220, 220]
+nbins = 25
+xlabel = "Reconstructed $\\mu$ Start X [cm]"
+
+[variables.reco_leading_muon_start_y]
+key = "reco_leading_muon_start_y"
+range = [-220, 220]
+nbins = 25
+xlabel = "Reconstructed $\\mu$ Start Y [cm]"
+
+[variables.reco_leading_muon_start_z]
+key = "reco_leading_muon_start_z"
+range = [-20, 520]
+nbins = 25
+xlabel = "Reconstructed $\\mu$ Start Z [cm]"
+
+[variables.reco_vertex_x]
+key = "reco_vertex_x"
+range = [-220, 220]
+nbins = 25
+xlabel = "Reconstructed Vertex X [cm]"
+
+[variables.reco_vertex_y]
+key = "reco_vertex_y"
+range = [-220, 220]
+nbins = 25
+xlabel = "Reconstructed Vertex Y [cm]"
+
+[variables.reco_vertex_z]
+key = "reco_vertex_z"
+range = [-20, 520]
+nbins = 25
+xlabel = "Reconstructed Vertex Z [cm]"
+
+[variables.reco_leading_muon_muon_softmax]
+key = "reco_leading_muon_muon_softmax"
+range = [0.0, 1.0]
+nbins = 25
+xlabel = "Reconstructed $\\mu$ Softmax"
+
+[variables.reco_leading_pion_muon_softmax]
+key = "reco_leading_pion_muon_softmax"
+range = [0.0, 1.0]
+nbins = 25
+xlabel = "Reconstructed $\\mu$ Softmax"
+
+[variables.reco_leading_muon_pion_softmax]
+key = "reco_leading_muon_pion_softmax"
+range = [0.0, 1.0]
+nbins = 25
+xlabel = "Reconstructed $\\pi$ Softmax"
+
+[variables.reco_leading_pion_pion_softmax]
+key = "reco_leading_pion_pion_softmax"
+range = [0.0, 1.0]
+nbins = 25
+xlabel = "Reconstructed $\\pi$ Softmax"
+
+[variables.reco_leading_muon_proton_softmax]
+key = "reco_leading_muon_proton_softmax"
+range = [0.0, 1.0]
+nbins = 25
+xlabel = "Reconstructed Proton Softmax"
+
+[variables.reco_leading_pion_proton_softmax]
+key = "reco_leading_pion_proton_softmax"
+range = [0.0, 1.0]
+nbins = 25
+xlabel = "Reconstructed Proton Softmax"
+
+[variables.reco_leading_muon_primary_softmax]
+key = "reco_leading_muon_primary_softmax"
+range = [0.0, 1.0]
+nbins = 25
+xlabel = "Reconstructed Primary Softmax"
+
+[variables.reco_leading_pion_primary_softmax]
+key = "reco_leading_pion_primary_softmax"
+range = [0.0, 1.0]
+nbins = 25
+xlabel = "Reconstructed Primary Softmax"

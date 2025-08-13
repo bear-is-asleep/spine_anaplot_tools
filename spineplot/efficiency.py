@@ -2,6 +2,7 @@ import numpy as np
 from scipy.stats import binom
 import pandas as pd
 import matplotlib.pyplot as plt
+import os
 
 from artists import SpineArtist
 from style import Style
@@ -52,7 +53,7 @@ class SpineEfficiency(SpineArtist):
     """
     def __init__(self, variable, categories, cuts, title,
                  xrange=None, xtitle=None, show_option='table',
-                 npts=1e6):
+                 npts=1e4):
         """
         Parameters
         ----------
@@ -228,7 +229,7 @@ class SpineEfficiency(SpineArtist):
             if style.mark_pot:
                 mark_pot(ax, self._exposure, style.mark_pot_horizontal, vadj=0.1)
             if style.mark_preliminary is not None:
-                mark_preliminary(ax, style.mark_preliminary, vadj=0.1)
+                mark_preliminary(ax, style.mark_preliminary, y=1.12)
 
         elif show_option == 'differential':
             # Lambda formatter to round the values to two decimal
@@ -310,7 +311,7 @@ class SpineEfficiency(SpineArtist):
             if style.mark_pot:
                 mark_pot(ax, self._exposure, style.mark_pot_horizontal)
             if style.mark_preliminary is not None:
-                mark_preliminary(ax, style.mark_preliminary, hadj=0.035 if style.scilimits is not None else 0)
+                mark_preliminary(ax, style.mark_preliminary)
 
     def add_sample(self, sample, is_ordinate):
         """
@@ -339,6 +340,13 @@ class SpineEfficiency(SpineArtist):
 
         # Calculate the efficiency for the sample
         self.calculate(sample)
+
+        if sample._save_dir is not None:
+            group = np.unique(list(self._categories.values()))
+            assert len(group) == 1, f"Multiple groups found in the sample: {group}"
+            group = group[0]
+            print(group)
+            self.save(sample._save_dir, group)
 
     @staticmethod
     def multiply_posteriors(pos0, pos1):
@@ -568,3 +576,22 @@ class SpineEfficiency(SpineArtist):
                 psigma[key][psigma[key] < 0] = 0
 
         return final_posteriors, cv, msigma, psigma
+    def save(self, save_dir, group_name):
+        """
+        Save the efficiency vs. variable of interest for a given group.
+
+        Parameters
+        ----------
+        save_dir : str
+            The directory to save the efficiency vs. variable of interest.
+        group_name : str
+            The name of the group to save the efficiency vs. variable of interest for.
+        """
+        os.makedirs(save_dir, exist_ok=True)
+        _,cv,_,_ = self.reduce(group_name)
+        # print(cv.keys(),self._cuts.keys())
+        # print(list(self._cuts.keys())[-1])
+        # print(cv[f'binned_seq_{list(self._cuts.keys())[-1]}'].shape)
+        # print(cv[f'binned_seq_{list(self._cuts.keys())[-1]}'])
+        print(f'Saved {self._variable._name} efficiency to {save_dir}/{self._variable._name}_eff.csv')
+        np.savetxt(f'{save_dir}/{self._variable._name}_eff.csv', cv[f'binned_seq_{list(self._cuts.keys())[-1]}'])

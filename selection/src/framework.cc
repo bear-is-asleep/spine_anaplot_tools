@@ -16,6 +16,7 @@
 
 #include "framework.h"
 #include "configuration.h"
+#include "selectors.h"
 
 // Get the singleton instance of the Registry.
 template<typename ValueT>

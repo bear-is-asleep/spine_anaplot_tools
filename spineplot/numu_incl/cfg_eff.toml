@@ -1,0 +1,36 @@
+
+[[this_includes]]
+file = '/exp/sbnd/app/users/brindenc/develop/medulla_area/medulla/spineplot/configurations/analyses/sbnd/numu_incl2025_sbnd_variables.toml'
+
+[[this_includes]]
+file = '/exp/sbnd/app/users/brindenc/develop/medulla_area/medulla/spineplot/configurations/common/styles.toml'
+
+[samples]
+[samples.mc_nu]
+key = 'simulation'
+exposure_type = 'pot'
+trees = ['signal1muX']
+precompute = { reco_leading_muon_momentum_gev = "reco_leading_muon_momentum / 1000.0", true_leading_muon_momentum_gev = "true_leading_muon_momentum / 1000.0"}
+
+[output]
+path = '/exp/sbnd/data/users/brindenc/medulla/test/tmp'
+
+[analysis]
+ordinate_sample = 'mc_nu'
+category_branch = 'true_category'
+category_assignment = [[0,1], [2,3], [4], [5], [6], [7]]
+category_labels = ['$\nu_\mu$ CC', '$\nu_\mu$ CC (OOPS)', 'Non-AV', '$\nu_e$ CC', 'NC', 'Cosmic']
+category_colors = ['gold','purple','sienna','blue','green','red']
+category_types = ['histogram', 'histogram', 'histogram', 'histogram', 'histogram', 'histogram']
+
+[[figure]]
+name = 'eff_table'
+type = 'SimpleFigure'
+style = 'basic_sbnd'
+figsize = [6.0,3.0]
+[[figure.artists]]
+type = 'SpineEfficiency'
+variable = 'reco_leading_muon_momentum_gev'
+groups = ['$\nu_\mu$ CC']
+cuts = {'reco_valid_flashmatch' = 'Flash Match', 'reco_fiducial_bool' = 'Fiducial', 'reco_has_muon_bool' = 'Has Muon', 'reco_leading_muon_start_dedx' = 'Start dE/dx', 'reco_flash_score_bool' = 'Flash Score'}
+draw_kwargs = {'show_option' = 'table', 'percentage' = true, 'show_seqeff' = true, 'show_unseqeff' = true}
